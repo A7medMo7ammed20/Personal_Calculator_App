@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' hide Flow;
 
+import '../../branding/daftar_mark.dart';
 import '../../data/contact_repository.dart';
 import '../../data/entry_repository.dart';
 import '../../domain/balance.dart';
@@ -184,6 +185,24 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Body horizontal-swipe → currency lens change. We accumulate the drag delta
+  // and decide on release, so a plain drag (no fling velocity) still switches.
+  // The list scrolls vertically, so a horizontal pan is free to mean "change
+  // currency" without fighting the scroll or a row long-press (ADR 0003).
+  double _swipeDx = 0;
+
+  void _onSwipeEnd(BuildContext context) {
+    const threshold = 48.0; // ignore incidental horizontal jitter
+    if (_swipeDx.abs() < threshold) return;
+    // In RTL the visual "next" tab sits to the left, so the sign inverts.
+    final rtl = Directionality.of(context) == TextDirection.rtl;
+    final forward = rtl ? _swipeDx > 0 : _swipeDx < 0;
+    final index = Currency.values.indexOf(_currency);
+    final next = index + (forward ? 1 : -1);
+    if (next < 0 || next >= Currency.values.length) return;
+    _selectCurrency(Currency.values[next]);
+  }
+
   void _onMenuAction(_HomeMenuAction action, AppLocalizations l10n) {
     switch (action) {
       case _HomeMenuAction.settings:
@@ -224,6 +243,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
+        // Brand mark in the leading slot — always Teal/white regardless of the
+        // user's in-app accent, per the brand rules. Title text stays as-is.
+        leading: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: DaftarIconTile(size: 32, radius: 8),
+        ),
         title: Text(l10n.appTitle),
         actions: [
           if (widget.themeController != null)
@@ -246,95 +271,104 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ],
       ),
-      body: Column(
-        children: [
-          _CurrencyLens(selected: _currency, onSelected: _selectCurrency),
-          Expanded(
-            child: FutureBuilder<_HomeData>(
-              future: _data,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final data = snapshot.data;
-                if (data == null || data.contacts.isEmpty) {
-                  return Center(
-                    child: Text(
-                      l10n.homeEmpty,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  );
-                }
-                // Period is a visibility filter (applied first), then search,
-                // then sort. A null activeIds means All time (no filtering).
-                final inPeriod = data.activeIds == null
-                    ? data.contacts
-                    : data.contacts
-                        .where((c) => data.activeIds!.contains(c.id))
-                        .toList();
-                final visible = sortContacts(
-                  filterContacts(inPeriod, _query),
-                  _sortField,
-                  balances: data.balances,
-                  activity: data.activity,
+      // Horizontal swipe anywhere on the body flips the currency lens; the
+      // ListView owns vertical drags, so the two never collide (ADR 0003).
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragStart: (_) => _swipeDx = 0,
+        onHorizontalDragUpdate: (d) => _swipeDx += d.primaryDelta ?? 0,
+        onHorizontalDragEnd: (_) => _onSwipeEnd(context),
+        child: FutureBuilder<_HomeData>(
+          future: _data,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final data = snapshot.data;
+            if (data == null || data.contacts.isEmpty) {
+              return Center(
+                child: Text(
+                  l10n.homeEmpty,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              );
+            }
+            // Period is a visibility filter (applied first), then search,
+            // then sort. A null activeIds means All time (no filtering).
+            final inPeriod = data.activeIds == null
+                ? data.contacts
+                : data.contacts
+                    .where((c) => data.activeIds!.contains(c.id))
+                    .toList();
+            final visible = sortContacts(
+              filterContacts(inPeriod, _query),
+              _sortField,
+              balances: data.balances,
+              activity: data.activity,
+              ascending: _ascending,
+            );
+            // No contacts survive the period → empty-period; otherwise it
+            // was the search box that cleared them → no-matches.
+            final emptyMessage = inPeriod.isEmpty
+                ? l10n.homeNoActivityInPeriod
+                : l10n.homeNoMatches;
+            return Column(
+              children: [
+                // One summary card: the all-time net position, or gross Flow
+                // (lent/received) when a period is bounded. Flow follows the
+                // period alone — search never changes it.
+                _SummaryCard(
+                  currency: _currency,
+                  totals: data.totals,
+                  flow: data.flow,
+                ),
+                _HomeToolbar(
+                  period: _period,
+                  onPeriodSelected: _selectPeriod,
+                  searchController: _searchController,
+                  sortField: _sortField,
                   ascending: _ascending,
-                );
-                // No contacts survive the period → empty-period; otherwise it
-                // was the search box that cleared them → no-matches.
-                final emptyMessage = inPeriod.isEmpty
-                    ? l10n.homeNoActivityInPeriod
-                    : l10n.homeNoMatches;
-                return Column(
-                  children: [
-                    // Flow header when a bounded period is active; the all-time
-                    // net-position header otherwise. Flow follows the period
-                    // alone — search never changes it.
-                    if (data.flow != null)
-                      _FlowHeader(flow: data.flow!, currency: _currency)
-                    else
-                      _TotalsHeader(totals: data.totals, currency: _currency),
-                    _PeriodSelector(period: _period, onSelected: _selectPeriod),
-                    _ContactSearchSortBar(
-                      controller: _searchController,
-                      sortField: _sortField,
-                      ascending: _ascending,
-                      onQueryChanged: (q) => setState(() => _query = q),
-                      onSortSelected: _selectSort,
-                    ),
-                    Expanded(
-                      child: visible.isEmpty
-                          ? Center(
-                              child: Text(
-                                emptyMessage,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                            )
-                          : ListView.builder(
-                              itemCount: visible.length,
-                              itemBuilder: (context, index) {
-                                final contact = visible[index];
-                                final balance = data.balances[contact.id] ??
-                                    const Balance(0);
-                                return _contactTile(
-                                  context,
-                                  l10n,
-                                  contact,
-                                  balance,
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
+                  onQueryChanged: (q) => setState(() => _query = q),
+                  onSortSelected: _selectSort,
+                ),
+                Expanded(
+                  child: visible.isEmpty
+                      ? Center(
+                          child: Text(
+                            emptyMessage,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: visible.length,
+                          itemBuilder: (context, index) {
+                            final contact = visible[index];
+                            final balance = data.balances[contact.id] ??
+                                const Balance(0);
+                            return _contactTile(
+                              context,
+                              l10n,
+                              contact,
+                              balance,
+                            );
+                          },
+                        ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addContact,
         tooltip: l10n.addContact,
         child: const Icon(Icons.person_add),
+      ),
+      // The currency lens is the whole bottom bar: a swipeable SAR/YER tab bar
+      // with an animated active indicator (ADR 0003).
+      bottomNavigationBar: _CurrencyLens(
+        selected: _currency,
+        onSelected: _selectCurrency,
       ),
     );
   }
@@ -479,15 +513,21 @@ class _HomeScreenState extends State<HomeScreen> {
     // Builder so the long-press callback gets a context whose RenderObject is
     // this tile (not the enclosing list), giving the overlay its anchor rect.
     return Builder(
+      // Single-line row: avatar · name · coloured signed balance. The phone is
+      // deliberately not shown in-app — it lives only in PDF/WhatsApp share
+      // (design-system.md · Density). It remains searchable via filterContacts.
       builder: (tileContext) => ListTile(
         leading: CircleAvatar(child: Text(_initial(contact.name))),
-        title: Text(contact.name),
-        subtitle: contact.phone == null ? null : Text(contact.phone!),
+        title: Text(
+          contact.name,
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         trailing: Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: color,
             fontWeight: FontWeight.w600,
+            fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
         onTap: () => _openContact(contact),
@@ -503,104 +543,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// The home period filter (#7): a visibility filter over the Contact list plus
-/// the [[Flow]] header mode. Custom opens a date-range picker (handled upstream).
-class _PeriodSelector extends StatelessWidget {
-  const _PeriodSelector({required this.period, required this.onSelected});
-
-  final PeriodOption period;
-  final ValueChanged<PeriodOption> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    String label(PeriodOption p) => switch (p) {
-      PeriodOption.allTime => l10n.periodAllTime,
-      PeriodOption.thisMonth => l10n.periodThisMonth,
-      PeriodOption.lastMonth => l10n.periodLastMonth,
-      PeriodOption.thisYear => l10n.periodThisYear,
-      PeriodOption.custom => l10n.periodCustom,
-    };
-    return Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-        child: PopupMenuButton<PeriodOption>(
-          tooltip: l10n.periodLabel,
-          initialValue: period,
-          onSelected: onSelected,
-          itemBuilder: (context) => [
-            for (final p in PeriodOption.values)
-              CheckedPopupMenuItem(
-                value: p,
-                checked: p == period,
-                child: Text(label(p)),
-              ),
-          ],
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.event, size: 18),
-              const SizedBox(width: 6),
-              Text(label(period)),
-              const Icon(Icons.arrow_drop_down),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The grand-total header in [[Flow]] mode: gross lent / received for the active
-/// window. Replaces the net-position [_TotalsHeader] when a period is bounded.
-class _FlowHeader extends StatelessWidget {
-  const _FlowHeader({required this.flow, required this.currency});
-
-  final Flow flow;
-  final Currency currency;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: _TotalTile(
-              label: l10n.flowLent,
-              amount: formatMoney(flow.lent, currency),
-              color: context.semanticColors.owedToMe,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _TotalTile(
-              label: l10n.flowReceived,
-              amount: formatMoney(flow.received, currency),
-              color: context.semanticColors.owedByMe,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Search field plus a sort control (Recent / Name / Balance) for the home
-/// Contact list (#6). Tapping the active sort field toggles asc/desc — mirrors
-/// the per-contact entry sort bar.
-class _ContactSearchSortBar extends StatelessWidget {
-  const _ContactSearchSortBar({
-    required this.controller,
+/// The single home toolbar (ADR 0003): a period filter chip, a search field,
+/// and a sort control on one row. Collapses what used to be two stacked bands.
+class _HomeToolbar extends StatelessWidget {
+  const _HomeToolbar({
+    required this.period,
+    required this.onPeriodSelected,
+    required this.searchController,
     required this.sortField,
     required this.ascending,
     required this.onQueryChanged,
     required this.onSortSelected,
   });
 
-  final TextEditingController controller;
+  final PeriodOption period;
+  final ValueChanged<PeriodOption> onPeriodSelected;
+  final TextEditingController searchController;
   final ContactSortField sortField;
   final bool ascending;
   final ValueChanged<String> onQueryChanged;
@@ -609,28 +567,73 @@ class _ContactSearchSortBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    String label(ContactSortField f) => switch (f) {
+    String periodLabel(PeriodOption p) => switch (p) {
+      PeriodOption.allTime => l10n.periodAllTime,
+      PeriodOption.thisMonth => l10n.periodThisMonth,
+      PeriodOption.lastMonth => l10n.periodLastMonth,
+      PeriodOption.thisYear => l10n.periodThisYear,
+      PeriodOption.custom => l10n.periodCustom,
+    };
+    String sortLabel(ContactSortField f) => switch (f) {
       ContactSortField.activity => l10n.sortByActivity,
       ContactSortField.name => l10n.sortByName,
       ContactSortField.balanceSize => l10n.sortByBalanceSize,
     };
+    final spacing = context.spacing;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: EdgeInsets.fromLTRB(spacing.lg, 0, spacing.lg, spacing.sm),
       child: Row(
         children: [
+          // Period chip: opens the period menu; its label doubles as the
+          // current-period readout.
+          PopupMenuButton<PeriodOption>(
+            tooltip: l10n.periodLabel,
+            initialValue: period,
+            onSelected: onPeriodSelected,
+            itemBuilder: (context) => [
+              for (final p in PeriodOption.values)
+                CheckedPopupMenuItem(
+                  value: p,
+                  checked: p == period,
+                  child: Text(periodLabel(p)),
+                ),
+            ],
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: spacing.md,
+                vertical: spacing.sm,
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(context.radius.pill),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.event, size: 18),
+                  SizedBox(width: spacing.xs),
+                  Text(periodLabel(period)),
+                  const Icon(Icons.arrow_drop_down, size: 18),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(width: spacing.sm),
           Expanded(
             child: TextField(
-              controller: controller,
+              controller: searchController,
               onChanged: onQueryChanged,
               decoration: InputDecoration(
                 isDense: true,
                 prefixIcon: const Icon(Icons.search),
                 hintText: l10n.searchContactsHint,
-                border: const OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(context.radius.md),
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: spacing.sm),
           PopupMenuButton<ContactSortField>(
             tooltip: l10n.sortLabel,
             icon: Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward),
@@ -641,7 +644,7 @@ class _ContactSearchSortBar extends StatelessWidget {
                 CheckedPopupMenuItem(
                   value: f,
                   checked: f == sortField,
-                  child: Text(label(f)),
+                  child: Text(sortLabel(f)),
                 ),
             ],
           ),
@@ -651,7 +654,9 @@ class _ContactSearchSortBar extends StatelessWidget {
   }
 }
 
-/// The SAR/YER lens switch at the top of home.
+/// The currency lens as a swipeable bottom tab bar (ADR 0003): SAR / YER with
+/// Material 3's animated active-tab indicator. Selecting a tab — or swiping the
+/// body — switches the global lens; the two currencies never mix.
 class _CurrencyLens extends StatelessWidget {
   const _CurrencyLens({required this.selected, required this.onSelected});
 
@@ -660,58 +665,95 @@ class _CurrencyLens extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      child: SegmentedButton<Currency>(
-        segments: [
-          for (final currency in Currency.values)
-            ButtonSegment(value: currency, label: Text(currency.code)),
-        ],
-        selected: {selected},
-        showSelectedIcon: false,
-        onSelectionChanged: (selection) => onSelected(selection.first),
-      ),
+    final textTheme = Theme.of(context).textTheme;
+    final primary = Theme.of(context).colorScheme.primary;
+    return NavigationBar(
+      selectedIndex: Currency.values.indexOf(selected),
+      onDestinationSelected: (i) => onSelected(Currency.values[i]),
+      destinations: [
+        for (final currency in Currency.values)
+          NavigationDestination(
+            icon: Text(currency.symbol, style: textTheme.titleMedium),
+            selectedIcon: Text(
+              currency.symbol,
+              style: textTheme.titleMedium?.copyWith(color: primary),
+            ),
+            label: currency.code,
+          ),
+      ],
     );
   }
 }
 
-/// Per-currency grand totals: what I'm owed and what I owe, side by side.
-class _TotalsHeader extends StatelessWidget {
-  const _TotalsHeader({required this.totals, required this.currency});
+/// The unified home summary card (ADR 0003): one card showing the active
+/// currency's all-time net position (Owed to you / You owe), or gross [[Flow]]
+/// (Lent / Received) when a period is bounded.
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.currency,
+    required this.totals,
+    this.flow,
+  });
 
-  final LedgerTotals totals;
   final Currency currency;
+  final LedgerTotals totals;
+
+  /// Non-null when a bounded period is active — the card then shows Flow.
+  final Flow? flow;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final semantics = context.semanticColors;
+    final spacing = context.spacing;
+    final bounded = flow != null;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: _TotalTile(
-              label: l10n.homeTotalOwedToMe,
-              amount: formatMoney(totals.owedToMe, currency),
-              color: context.semanticColors.owedToMe,
+      padding: EdgeInsets.fromLTRB(
+        spacing.lg,
+        spacing.lg,
+        spacing.lg,
+        spacing.sm,
+      ),
+      child: Container(
+        padding: EdgeInsets.all(spacing.lg),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(context.radius.lg),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _SummaryTile(
+                label: bounded ? l10n.flowLent : l10n.homeTotalOwedToMe,
+                amount: formatMoney(
+                  bounded ? flow!.lent : totals.owedToMe,
+                  currency,
+                ),
+                color: semantics.owedToMe,
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _TotalTile(
-              label: l10n.homeTotalOwedByMe,
-              amount: formatMoney(totals.owedByMe, currency),
-              color: context.semanticColors.owedByMe,
+            SizedBox(width: spacing.lg),
+            Expanded(
+              child: _SummaryTile(
+                label: bounded ? l10n.flowReceived : l10n.homeTotalOwedByMe,
+                amount: formatMoney(
+                  bounded ? flow!.received : totals.owedByMe,
+                  currency,
+                ),
+                color: semantics.owedByMe,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _TotalTile extends StatelessWidget {
-  const _TotalTile({
+/// One half of the [_SummaryCard]: a label over a coloured, tabular-figure
+/// amount. Amounts scale down rather than overflow on narrow screens.
+class _SummaryTile extends StatelessWidget {
+  const _SummaryTile({
     required this.label,
     required this.amount,
     required this.color,
@@ -723,27 +765,30 @@ class _TotalTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.30)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: Theme.of(context).textTheme.labelMedium),
-          const SizedBox(height: 4),
-          Text(
+    final textTheme = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: textTheme.labelMedium,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        SizedBox(height: context.spacing.xs),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(
             amount,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            style: textTheme.titleLarge?.copyWith(
               color: color,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

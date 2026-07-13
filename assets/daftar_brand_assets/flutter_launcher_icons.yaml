@@ -1,0 +1,10 @@
+# flutter_launcher_icons — generates all launcher-icon densities from the masters.
+# Run:  dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/branding/logo_icon.png"          # full-bleed teal tile
+  min_sdk_android: 21
+  adaptive_icon_background: "#14746F"                    # Teal — always, regardless of in-app accent
+  adaptive_icon_foreground: "assets/branding/logo_foreground.png"
+  remove_alpha_ios: true
