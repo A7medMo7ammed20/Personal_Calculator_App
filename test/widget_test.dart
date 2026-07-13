@@ -1,5 +1,6 @@
 import 'package:debt_ledger/data/app_database.dart';
 import 'package:debt_ledger/data/contact_repository.dart';
+import 'package:debt_ledger/data/entry_repository.dart';
 import 'package:debt_ledger/l10n/gen/app_localizations.dart';
 import 'package:debt_ledger/presentation/home/home_screen.dart';
 import 'package:flutter/material.dart';
@@ -18,16 +19,23 @@ Widget _wrap(Locale locale, Widget child) {
 // The no-isolate factory keeps SQLite in the test isolate so pumpAndSettle can
 // see the async responses (the default ffi factory runs it in a background
 // isolate whose port messages the fake test clock never pumps).
-ContactRepository _memoryRepo() => ContactRepository(
-  AppDatabase(factory: databaseFactoryFfiNoIsolate, path: inMemoryDatabasePath),
-);
+HomeScreen _homeScreen() {
+  final db = AppDatabase(
+    factory: databaseFactoryFfiNoIsolate,
+    path: inMemoryDatabasePath,
+  );
+  return HomeScreen(
+    repository: ContactRepository(db),
+    entryRepository: EntryRepository(db),
+  );
+}
 
 void main() {
   setUpAll(sqfliteFfiInit);
 
   testWidgets('home renders the English empty state (LTR)', (tester) async {
     await tester.pumpWidget(
-      _wrap(const Locale('en'), HomeScreen(repository: _memoryRepo())),
+      _wrap(const Locale('en'), _homeScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -39,7 +47,7 @@ void main() {
 
   testWidgets('home renders the Arabic empty state (RTL)', (tester) async {
     await tester.pumpWidget(
-      _wrap(const Locale('ar'), HomeScreen(repository: _memoryRepo())),
+      _wrap(const Locale('ar'), _homeScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -51,7 +59,7 @@ void main() {
 
   testWidgets('adding a Contact shows it in the home list', (tester) async {
     await tester.pumpWidget(
-      _wrap(const Locale('en'), HomeScreen(repository: _memoryRepo())),
+      _wrap(const Locale('en'), _homeScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -68,7 +76,7 @@ void main() {
 
   testWidgets('saving with an empty name is blocked', (tester) async {
     await tester.pumpWidget(
-      _wrap(const Locale('en'), HomeScreen(repository: _memoryRepo())),
+      _wrap(const Locale('en'), _homeScreen()),
     );
     await tester.pumpAndSettle();
 

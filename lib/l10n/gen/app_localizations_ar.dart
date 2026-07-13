@@ -28,4 +28,44 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get save => 'حفظ';
+
+  @override
+  String get addEntry => 'إضافة حركة';
+
+  @override
+  String get entryAmount => 'المبلغ';
+
+  @override
+  String get amountRequired => 'أدخل المبلغ';
+
+  @override
+  String get amountInvalid => 'أدخل مبلغًا أكبر من صفر';
+
+  @override
+  String get directionOwedToMe => 'لك';
+
+  @override
+  String get directionOwedByMe => 'عليك';
+
+  @override
+  String get entryDescription => 'الوصف (اختياري)';
+
+  @override
+  String get entryDateTime => 'التاريخ والوقت';
+
+  @override
+  String get contactEntriesEmpty => 'لا توجد حركات بعد';
+
+  @override
+  String balanceOwedToMe(String amount) {
+    return 'لك $amount';
+  }
+
+  @override
+  String balanceOwedByMe(String amount) {
+    return 'عليك $amount';
+  }
+
+  @override
+  String get balanceSettled => 'مسدَّد';
 }

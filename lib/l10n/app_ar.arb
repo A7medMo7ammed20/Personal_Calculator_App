@@ -6,5 +6,17 @@
   "contactName": "الاسم",
   "contactPhone": "الهاتف (اختياري)",
   "nameRequired": "الاسم مطلوب",
-  "save": "حفظ"
+  "save": "حفظ",
+  "addEntry": "إضافة حركة",
+  "entryAmount": "المبلغ",
+  "amountRequired": "أدخل المبلغ",
+  "amountInvalid": "أدخل مبلغًا أكبر من صفر",
+  "directionOwedToMe": "لك",
+  "directionOwedByMe": "عليك",
+  "entryDescription": "الوصف (اختياري)",
+  "entryDateTime": "التاريخ والوقت",
+  "contactEntriesEmpty": "لا توجد حركات بعد",
+  "balanceOwedToMe": "لك {amount}",
+  "balanceOwedByMe": "عليك {amount}",
+  "balanceSettled": "مسدَّد"
 }

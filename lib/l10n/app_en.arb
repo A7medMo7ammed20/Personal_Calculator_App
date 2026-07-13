@@ -27,5 +27,59 @@
   "save": "Save",
   "@save": {
     "description": "Label for the save button."
+  },
+  "addEntry": "Add entry",
+  "@addEntry": {
+    "description": "Title/label for the add-entry action and screen."
+  },
+  "entryAmount": "Amount",
+  "@entryAmount": {
+    "description": "Label for the entry amount field."
+  },
+  "amountRequired": "Enter an amount",
+  "@amountRequired": {
+    "description": "Validation message when the amount field is empty."
+  },
+  "amountInvalid": "Enter an amount greater than zero",
+  "@amountInvalid": {
+    "description": "Validation message when the amount is not a positive number."
+  },
+  "directionOwedToMe": "Owed to me",
+  "@directionOwedToMe": {
+    "description": "Direction toggle option: the contact owes the user (green)."
+  },
+  "directionOwedByMe": "Owed by me",
+  "@directionOwedByMe": {
+    "description": "Direction toggle option: the user owes the contact (red)."
+  },
+  "entryDescription": "Description (optional)",
+  "@entryDescription": {
+    "description": "Label for the optional entry description field."
+  },
+  "entryDateTime": "Date & time",
+  "@entryDateTime": {
+    "description": "Label for the entry date/time picker."
+  },
+  "contactEntriesEmpty": "No entries yet",
+  "@contactEntriesEmpty": {
+    "description": "Placeholder on the contact page when it has no entries."
+  },
+  "balanceOwedToMe": "owes you {amount}",
+  "@balanceOwedToMe": {
+    "description": "Balance label when the contact owes the user (green).",
+    "placeholders": {
+      "amount": { "type": "String", "example": "150.00 ر.س" }
+    }
+  },
+  "balanceOwedByMe": "you owe {amount}",
+  "@balanceOwedByMe": {
+    "description": "Balance label when the user owes the contact (red).",
+    "placeholders": {
+      "amount": { "type": "String", "example": "150.00 ر.س" }
+    }
+  },
+  "balanceSettled": "Settled",
+  "@balanceSettled": {
+    "description": "Balance label when nothing is outstanding in either direction."
   }
 }
