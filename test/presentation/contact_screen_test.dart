@@ -173,7 +173,7 @@ void main() {
     expect(find.text('Taxi'), findsNothing);
   });
 
-  testWidgets('swipe-to-delete asks for confirmation then removes on confirm',
+  testWidgets('long-press reveals delete which confirms then removes',
       (tester) async {
     await entries.add(seed(contact.id!, Direction.owedToMe, 150));
 
@@ -183,10 +183,16 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    // Swipe the entry tile toward the end (LTR: to the right) = delete.
-    await tester.drag(find.byType(Dismissible).first, const Offset(500, 0));
+    // Long-press the entry row → floating Edit/Delete buttons appear.
+    await tester.longPress(find.byType(ListTile).first);
     await tester.pumpAndSettle();
 
+    expect(find.byIcon(Icons.edit), findsOneWidget);
+    expect(find.byIcon(Icons.delete), findsOneWidget);
+
+    // Delete asks for confirmation.
+    await tester.tap(find.byIcon(Icons.delete));
+    await tester.pumpAndSettle();
     expect(find.text('Delete entry?'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(TextButton, 'Delete'));
