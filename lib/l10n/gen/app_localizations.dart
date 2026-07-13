@@ -223,6 +223,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You owe'**
   String get homeTotalOwedByMe;
+
+  /// Generic edit action label (swipe reveal, form title prefix).
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get edit;
+
+  /// Generic delete action label (swipe reveal).
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// Dismiss a dialog without acting.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// SnackBar action that reverses a delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get undo;
+
+  /// Title of the entry form when editing an existing entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit entry'**
+  String get editEntry;
+
+  /// Title of the contact form when editing an existing contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit contact'**
+  String get editContact;
+
+  /// Confirmation dialog title before deleting an entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete entry?'**
+  String get deleteEntryTitle;
+
+  /// Confirmation dialog body before deleting an entry.
+  ///
+  /// In en, this message translates to:
+  /// **'This entry will be removed and the balance recomputed.'**
+  String get deleteEntryMessage;
+
+  /// SnackBar shown after an entry is deleted, alongside Undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry deleted'**
+  String get entryDeleted;
+
+  /// Confirmation dialog title before deleting a contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete contact?'**
+  String get deleteContactTitle;
+
+  /// Confirmation body stating how many entries cascade-delete with the contact.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{This contact has no entries.} =1{1 entry will also be deleted.} other{{count} entries will also be deleted.}}'**
+  String deleteContactMessage(int count);
+
+  /// SnackBar shown after a contact is deleted, alongside Undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact deleted'**
+  String get contactDeleted;
+
+  /// Hint text in the per-contact entry search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search description'**
+  String get searchEntriesHint;
+
+  /// Label for the entry sort control.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sortLabel;
+
+  /// Sort entries by date.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get sortByDate;
+
+  /// Sort entries by signed value.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get sortByValue;
+
+  /// Sort entries by description text.
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get sortByDescription;
+
+  /// Title of the running-summary bottom sheet, showing the tapped entry's date.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary up to {date}'**
+  String summaryTitle(String date);
 }
 
 class _AppLocalizationsDelegate

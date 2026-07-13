@@ -89,5 +89,47 @@
   "homeTotalOwedByMe": "You owe",
   "@homeTotalOwedByMe": {
     "description": "Home header label for the per-currency total the user owes."
+  },
+  "edit": "Edit",
+  "@edit": { "description": "Generic edit action label (swipe reveal, form title prefix)." },
+  "delete": "Delete",
+  "@delete": { "description": "Generic delete action label (swipe reveal)." },
+  "cancel": "Cancel",
+  "@cancel": { "description": "Dismiss a dialog without acting." },
+  "undo": "Undo",
+  "@undo": { "description": "SnackBar action that reverses a delete." },
+  "editEntry": "Edit entry",
+  "@editEntry": { "description": "Title of the entry form when editing an existing entry." },
+  "editContact": "Edit contact",
+  "@editContact": { "description": "Title of the contact form when editing an existing contact." },
+  "deleteEntryTitle": "Delete entry?",
+  "@deleteEntryTitle": { "description": "Confirmation dialog title before deleting an entry." },
+  "deleteEntryMessage": "This entry will be removed and the balance recomputed.",
+  "@deleteEntryMessage": { "description": "Confirmation dialog body before deleting an entry." },
+  "entryDeleted": "Entry deleted",
+  "@entryDeleted": { "description": "SnackBar shown after an entry is deleted, alongside Undo." },
+  "deleteContactTitle": "Delete contact?",
+  "@deleteContactTitle": { "description": "Confirmation dialog title before deleting a contact." },
+  "deleteContactMessage": "{count, plural, =0{This contact has no entries.} =1{1 entry will also be deleted.} other{{count} entries will also be deleted.}}",
+  "@deleteContactMessage": {
+    "description": "Confirmation body stating how many entries cascade-delete with the contact.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "contactDeleted": "Contact deleted",
+  "@contactDeleted": { "description": "SnackBar shown after a contact is deleted, alongside Undo." },
+  "searchEntriesHint": "Search description",
+  "@searchEntriesHint": { "description": "Hint text in the per-contact entry search field." },
+  "sortLabel": "Sort",
+  "@sortLabel": { "description": "Label for the entry sort control." },
+  "sortByDate": "Date",
+  "@sortByDate": { "description": "Sort entries by date." },
+  "sortByValue": "Value",
+  "@sortByValue": { "description": "Sort entries by signed value." },
+  "sortByDescription": "Description",
+  "@sortByDescription": { "description": "Sort entries by description text." },
+  "summaryTitle": "Summary up to {date}",
+  "@summaryTitle": {
+    "description": "Title of the running-summary bottom sheet, showing the tapped entry's date.",
+    "placeholders": { "date": { "type": "String", "example": "Mar 3, 2026" } }
   }
 }

@@ -74,4 +74,72 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get homeTotalOwedByMe => 'عليك';
+
+  @override
+  String get edit => 'تعديل';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String get cancel => 'إلغاء';
+
+  @override
+  String get undo => 'تراجع';
+
+  @override
+  String get editEntry => 'تعديل الحركة';
+
+  @override
+  String get editContact => 'تعديل جهة الاتصال';
+
+  @override
+  String get deleteEntryTitle => 'حذف الحركة؟';
+
+  @override
+  String get deleteEntryMessage => 'ستُحذف هذه الحركة وسيُعاد حساب الرصيد.';
+
+  @override
+  String get entryDeleted => 'تم حذف الحركة';
+
+  @override
+  String get deleteContactTitle => 'حذف جهة الاتصال؟';
+
+  @override
+  String deleteContactMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ستُحذف $count حركة أيضًا.',
+      many: 'ستُحذف $count حركة أيضًا.',
+      few: 'ستُحذف $count حركات أيضًا.',
+      two: 'ستُحذف حركتان أيضًا.',
+      one: 'ستُحذف حركة واحدة أيضًا.',
+      zero: 'لا توجد حركات لهذه الجهة.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get contactDeleted => 'تم حذف جهة الاتصال';
+
+  @override
+  String get searchEntriesHint => 'ابحث في الوصف';
+
+  @override
+  String get sortLabel => 'ترتيب';
+
+  @override
+  String get sortByDate => 'التاريخ';
+
+  @override
+  String get sortByValue => 'القيمة';
+
+  @override
+  String get sortByDescription => 'الوصف';
+
+  @override
+  String summaryTitle(String date) {
+    return 'الملخّص حتى $date';
+  }
 }
