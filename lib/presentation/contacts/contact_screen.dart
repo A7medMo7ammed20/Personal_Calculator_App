@@ -10,6 +10,7 @@ import '../../domain/entry_sort.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../entries/add_entry_screen.dart';
 import '../money_format.dart';
+import '../widgets/item_actions_overlay.dart';
 import 'running_summary_sheet.dart';
 
 /// The heart of the ledger: one Contact's Entries plus a live per-Contact
@@ -131,7 +132,7 @@ class _ContactScreenState extends State<ContactScreen> {
                         itemCount: visible.length,
                         separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (context, index) =>
-                            _dismissibleEntry(context, l10n, entries, visible[index]),
+                            _entryTile(context, l10n, entries, visible[index]),
                       ),
               ),
             ],
@@ -160,41 +161,51 @@ class _ContactScreenState extends State<ContactScreen> {
     return balance.isOwedToMe ? _green : _red;
   }
 
-  Widget _dismissibleEntry(
-    BuildContext context,
+  /// Long-press an entry row → floating Edit/Delete buttons beside it (#5).
+  /// [tileContext] is the tile's own element, so its RenderBox gives the anchor
+  /// rect the overlay draws around. Edit and Delete reuse the same handlers the
+  /// swipe path once used; Delete keeps the confirm-then-undo flow.
+  void _showEntryActions(
+    BuildContext tileContext,
     AppLocalizations l10n,
     List<Entry> allEntries,
     Entry entry,
   ) {
-    final scheme = Theme.of(context).colorScheme;
-    return Dismissible(
-      key: ValueKey('entry-${entry.id}'),
-      // Swipe toward END = delete (red). Confirmed, then undoable.
-      background: Container(
-        color: _red.withValues(alpha: 0.90),
-        alignment: AlignmentDirectional.centerStart,
-        padding: const EdgeInsetsDirectional.only(start: 20),
-        child: Icon(Icons.delete, color: scheme.onError),
+    final box = tileContext.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final rect = box.localToGlobal(Offset.zero) & box.size;
+
+    showItemActionsOverlay(
+      tileContext,
+      anchor: rect,
+      anchorPreview: SizedBox.fromSize(
+        size: rect.size,
+        child: Material(
+          color: Theme.of(tileContext).colorScheme.surface,
+          child: _entryTile(tileContext, l10n, allEntries, entry),
+        ),
       ),
-      // Swipe toward START = edit (blue). Never dismisses the tile.
-      secondaryBackground: Container(
-        color: Colors.blue.withValues(alpha: 0.85),
-        alignment: AlignmentDirectional.centerEnd,
-        padding: const EdgeInsetsDirectional.only(end: 20),
-        child: const Icon(Icons.edit, color: Colors.white),
-      ),
-      confirmDismiss: (direction) async {
-        if (direction == DismissDirection.startToEnd) {
-          final ok = await _confirmDeleteEntry(l10n);
-          return ok;
-        } else {
-          await _editEntry(entry);
-          return false; // edit never dismisses
-        }
-      },
-      onDismissed: (_) => _deleteEntry(entry),
-      child: _entryTile(context, l10n, allEntries, entry),
+      actions: [
+        ItemAction(
+          icon: Icons.edit,
+          label: l10n.edit,
+          onSelected: () => _editEntry(entry),
+        ),
+        ItemAction(
+          icon: Icons.delete,
+          color: _red,
+          label: l10n.delete,
+          onSelected: () => _deleteEntryWithConfirm(l10n, entry),
+        ),
+      ],
     );
+  }
+
+  Future<void> _deleteEntryWithConfirm(
+    AppLocalizations l10n,
+    Entry entry,
+  ) async {
+    if (await _confirmDeleteEntry(l10n)) await _deleteEntry(entry);
   }
 
   Future<bool> _confirmDeleteEntry(AppLocalizations l10n) async {
@@ -225,17 +236,19 @@ class _ContactScreenState extends State<ContactScreen> {
     final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(l10n.entryDeleted),
-        action: SnackBarAction(
-          label: l10n.undo,
-          onPressed: () async {
-            // Re-insert as a fresh row; nothing references entry ids.
-            await widget.repository.add(entry.copyWith(id: null));
-            if (mounted) setState(_load);
-          },
+      ..showSnackBar(
+        SnackBar(
+          content: Text(l10n.entryDeleted),
+          action: SnackBarAction(
+            label: l10n.undo,
+            onPressed: () async {
+              // Re-insert as a fresh row; nothing references entry ids.
+              await widget.repository.add(entry.copyWith(id: null));
+              if (mounted) setState(_load);
+            },
+          ),
         ),
-      ));
+      );
   }
 
   Future<void> _editEntry(Entry entry) async {
@@ -265,30 +278,36 @@ class _ContactScreenState extends State<ContactScreen> {
     ).add_jm().format(entry.createdAt);
     final sign = toMe ? '+' : '−';
 
-    return ListTile(
-      onTap: () => showRunningSummarySheet(
-        context,
-        entries: allEntries,
-        tapped: entry,
-        currency: widget.currency,
-      ),
-      leading: CircleAvatar(
-        backgroundColor: color.withValues(alpha: 0.15),
-        foregroundColor: color,
-        child: Icon(toMe ? Icons.south_west : Icons.north_east),
-      ),
-      title: Text(
-        entry.description?.isNotEmpty == true
-            ? entry.description!
-            : (toMe ? l10n.directionOwedToMe : l10n.directionOwedByMe),
-      ),
-      subtitle: Text(date),
-      trailing: Text(
-        '$sign${formatMoney(entry.amount, entry.currency)}',
-        style: Theme.of(context)
-            .textTheme
-            .titleMedium
-            ?.copyWith(color: color, fontWeight: FontWeight.w600),
+    // Builder so the long-press callback gets a context whose RenderObject is
+    // this tile (not the enclosing sliver), giving the overlay its anchor rect.
+    return Builder(
+      builder: (tileContext) => ListTile(
+        onTap: () => showRunningSummarySheet(
+          context,
+          entries: allEntries,
+          tapped: entry,
+          currency: widget.currency,
+        ),
+        onLongPress: () =>
+            _showEntryActions(tileContext, l10n, allEntries, entry),
+        leading: CircleAvatar(
+          backgroundColor: color.withValues(alpha: 0.15),
+          foregroundColor: color,
+          child: Icon(toMe ? Icons.south_west : Icons.north_east),
+        ),
+        title: Text(
+          entry.description?.isNotEmpty == true
+              ? entry.description!
+              : (toMe ? l10n.directionOwedToMe : l10n.directionOwedByMe),
+        ),
+        subtitle: Text(date),
+        trailing: Text(
+          '$sign${formatMoney(entry.amount, entry.currency)}',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }
@@ -322,9 +341,9 @@ class _BalanceHeader extends StatelessWidget {
         label,
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
