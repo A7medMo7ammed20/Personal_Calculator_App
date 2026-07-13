@@ -182,4 +182,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String summaryTitle(String date) {
     return 'Summary up to $date';
   }
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsAccent => 'Accent color';
+
+  @override
+  String get settingsAppearance => 'Appearance';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get accentTeal => 'Teal';
+
+  @override
+  String get accentIndigo => 'Indigo';
+
+  @override
+  String get accentPlum => 'Plum';
+
+  @override
+  String get accentOcean => 'Ocean';
 }
