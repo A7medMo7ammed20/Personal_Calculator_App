@@ -4,6 +4,7 @@ import '../../data/contact_repository.dart';
 import '../../data/entry_repository.dart';
 import '../../domain/balance.dart';
 import '../../domain/contact.dart';
+import '../../domain/contact_sort.dart';
 import '../../domain/currency.dart';
 import '../../domain/ledger_totals.dart';
 import '../../l10n/gen/app_localizations.dart';
@@ -35,10 +36,11 @@ class HomeScreen extends StatefulWidget {
 
 /// Everything the home screen renders for one currency lens, loaded together.
 class _HomeData {
-  const _HomeData(this.contacts, this.balances, this.totals);
+  const _HomeData(this.contacts, this.balances, this.activity, this.totals);
 
   final List<Contact> contacts;
   final Map<int, Balance> balances;
+  final Map<int, DateTime> activity;
   final LedgerTotals totals;
 }
 
@@ -46,10 +48,23 @@ class _HomeScreenState extends State<HomeScreen> {
   Currency _currency = Currency.sar;
   late Future<_HomeData> _data;
 
+  // Search + sort live on the screen (ephemeral): they persist across a lens
+  // switch but reset on restart. Default: most-recent-activity, newest first.
+  final _searchController = TextEditingController();
+  String _query = '';
+  ContactSortField _sortField = ContactSortField.activity;
+  bool _ascending = false;
+
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _load() {
@@ -59,7 +74,27 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<_HomeData> _fetch(Currency currency) async {
     final contacts = await widget.repository.list();
     final balances = await widget.entryRepository.balancesByCurrency(currency);
-    return _HomeData(contacts, balances, totalsOf(balances.values));
+    final activity = await widget.entryRepository.lastActivityByCurrency(
+      currency,
+    );
+    return _HomeData(contacts, balances, activity, totalsOf(balances.values));
+  }
+
+  /// Each field's natural direction the first time it is chosen; tapping the
+  /// active field then toggles from here (activity newest, name A–Z, balance
+  /// biggest first).
+  bool _defaultAscendingFor(ContactSortField field) =>
+      field == ContactSortField.name;
+
+  void _selectSort(ContactSortField field) {
+    setState(() {
+      if (_sortField == field) {
+        _ascending = !_ascending;
+      } else {
+        _sortField = field;
+        _ascending = _defaultAscendingFor(field);
+      }
+    });
   }
 
   void _selectCurrency(Currency currency) {
@@ -117,19 +152,45 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                 }
+                final visible = sortContacts(
+                  filterContacts(data.contacts, _query),
+                  _sortField,
+                  balances: data.balances,
+                  activity: data.activity,
+                  ascending: _ascending,
+                );
                 return Column(
                   children: [
                     _TotalsHeader(totals: data.totals, currency: _currency),
+                    _ContactSearchSortBar(
+                      controller: _searchController,
+                      sortField: _sortField,
+                      ascending: _ascending,
+                      onQueryChanged: (q) => setState(() => _query = q),
+                      onSortSelected: _selectSort,
+                    ),
                     Expanded(
-                      child: ListView.builder(
-                        itemCount: data.contacts.length,
-                        itemBuilder: (context, index) {
-                          final contact = data.contacts[index];
-                          final balance =
-                              data.balances[contact.id] ?? const Balance(0);
-                          return _contactTile(context, l10n, contact, balance);
-                        },
-                      ),
+                      child: visible.isEmpty
+                          ? Center(
+                              child: Text(
+                                l10n.homeNoMatches,
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: visible.length,
+                              itemBuilder: (context, index) {
+                                final contact = visible[index];
+                                final balance = data.balances[contact.id] ??
+                                    const Balance(0);
+                                return _contactTile(
+                                  context,
+                                  l10n,
+                                  contact,
+                                  balance,
+                                );
+                              },
+                            ),
                     ),
                   ],
                 );
@@ -306,6 +367,69 @@ class _HomeScreenState extends State<HomeScreen> {
   String _initial(String name) {
     final trimmed = name.trim();
     return trimmed.isEmpty ? '?' : trimmed.characters.first.toUpperCase();
+  }
+}
+
+/// Search field plus a sort control (Recent / Name / Balance) for the home
+/// Contact list (#6). Tapping the active sort field toggles asc/desc — mirrors
+/// the per-contact entry sort bar.
+class _ContactSearchSortBar extends StatelessWidget {
+  const _ContactSearchSortBar({
+    required this.controller,
+    required this.sortField,
+    required this.ascending,
+    required this.onQueryChanged,
+    required this.onSortSelected,
+  });
+
+  final TextEditingController controller;
+  final ContactSortField sortField;
+  final bool ascending;
+  final ValueChanged<String> onQueryChanged;
+  final ValueChanged<ContactSortField> onSortSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    String label(ContactSortField f) => switch (f) {
+      ContactSortField.activity => l10n.sortByActivity,
+      ContactSortField.name => l10n.sortByName,
+      ContactSortField.balanceSize => l10n.sortByBalanceSize,
+    };
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onQueryChanged,
+              decoration: InputDecoration(
+                isDense: true,
+                prefixIcon: const Icon(Icons.search),
+                hintText: l10n.searchContactsHint,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          PopupMenuButton<ContactSortField>(
+            tooltip: l10n.sortLabel,
+            icon: Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward),
+            initialValue: sortField,
+            onSelected: onSortSelected,
+            itemBuilder: (context) => [
+              for (final f in ContactSortField.values)
+                CheckedPopupMenuItem(
+                  value: f,
+                  checked: f == sortField,
+                  child: Text(label(f)),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 

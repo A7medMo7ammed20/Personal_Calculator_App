@@ -139,6 +139,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sortByDescription => 'الوصف';
 
   @override
+  String get searchContactsHint => 'ابحث بالاسم أو الهاتف';
+
+  @override
+  String get homeNoMatches => 'لا نتائج مطابقة';
+
+  @override
+  String get sortByActivity => 'الأحدث';
+
+  @override
+  String get sortByName => 'الاسم';
+
+  @override
+  String get sortByBalanceSize => 'الرصيد';
+
+  @override
   String summaryTitle(String date) {
     return 'الملخّص حتى $date';
   }

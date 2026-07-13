@@ -19,7 +19,8 @@ class ContactRepository {
     return contact.copyWith(id: id);
   }
 
-  /// All contacts, newest first (later slices add sort-by-activity, #6).
+  /// All contacts, newest first. The home screen re-sorts/filters this in the
+  /// domain layer (see `sortContacts` / `filterContacts`, #6).
   Future<List<Contact>> list() async {
     final db = await _appDb.open();
     final rows = await db.query(table, orderBy: 'id DESC');

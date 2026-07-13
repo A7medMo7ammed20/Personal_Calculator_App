@@ -137,6 +137,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sortByDescription => 'Description';
 
   @override
+  String get searchContactsHint => 'Search name or phone';
+
+  @override
+  String get homeNoMatches => 'No matches';
+
+  @override
+  String get sortByActivity => 'Recent';
+
+  @override
+  String get sortByName => 'Name';
+
+  @override
+  String get sortByBalanceSize => 'Balance';
+
+  @override
   String summaryTitle(String date) {
     return 'Summary up to $date';
   }
