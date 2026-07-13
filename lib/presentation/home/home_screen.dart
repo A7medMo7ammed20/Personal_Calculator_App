@@ -10,6 +10,7 @@ import '../../l10n/gen/app_localizations.dart';
 import '../contacts/add_contact_screen.dart';
 import '../contacts/contact_screen.dart';
 import '../money_format.dart';
+import '../widgets/item_actions_overlay.dart';
 
 /// Owed-to-me green and owed-by-me red, shared across the ledger screens.
 const Color _green = Color(0xFF2E7D5B);
@@ -126,8 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           final contact = data.contacts[index];
                           final balance =
                               data.balances[contact.id] ?? const Balance(0);
-                          return _dismissibleContact(
-                              context, l10n, contact, balance);
+                          return _contactTile(context, l10n, contact, balance);
                         },
                       ),
                     ),
@@ -146,41 +146,58 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _dismissibleContact(
-    BuildContext context,
+  /// Long-press a contact tile → floating Edit/Delete buttons beside it (#5).
+  /// [tileContext] is the tile's own element, so its RenderBox gives the anchor
+  /// rect. Delete keeps the cascade-count confirm dialog then the undo SnackBar.
+  void _showContactActions(
+    BuildContext tileContext,
     AppLocalizations l10n,
     Contact contact,
     Balance balance,
   ) {
-    final scheme = Theme.of(context).colorScheme;
-    return Dismissible(
-      key: ValueKey('contact-${contact.id}'),
-      background: Container(
-        color: _red.withValues(alpha: 0.90),
-        alignment: AlignmentDirectional.centerStart,
-        padding: const EdgeInsetsDirectional.only(start: 20),
-        child: Icon(Icons.delete, color: scheme.onError),
+    final box = tileContext.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final rect = box.localToGlobal(Offset.zero) & box.size;
+
+    showItemActionsOverlay(
+      tileContext,
+      anchor: rect,
+      anchorPreview: SizedBox.fromSize(
+        size: rect.size,
+        child: Material(
+          color: Theme.of(tileContext).colorScheme.surface,
+          child: _contactTile(tileContext, l10n, contact, balance),
+        ),
       ),
-      secondaryBackground: Container(
-        color: Colors.blue.withValues(alpha: 0.85),
-        alignment: AlignmentDirectional.centerEnd,
-        padding: const EdgeInsetsDirectional.only(end: 20),
-        child: const Icon(Icons.edit, color: Colors.white),
-      ),
-      confirmDismiss: (direction) async {
-        if (direction == DismissDirection.startToEnd) {
-          return _confirmDeleteContact(l10n, contact);
-        } else {
-          await _editContact(contact);
-          return false;
-        }
-      },
-      onDismissed: (_) => _deleteContact(contact),
-      child: _contactTile(context, l10n, contact, balance),
+      actions: [
+        ItemAction(
+          icon: Icons.edit,
+          label: l10n.edit,
+          onSelected: () => _editContact(contact),
+        ),
+        ItemAction(
+          icon: Icons.delete,
+          color: _red,
+          label: l10n.delete,
+          onSelected: () => _deleteContactWithConfirm(l10n, contact),
+        ),
+      ],
     );
   }
 
-  Future<bool> _confirmDeleteContact(AppLocalizations l10n, Contact contact) async {
+  Future<void> _deleteContactWithConfirm(
+    AppLocalizations l10n,
+    Contact contact,
+  ) async {
+    if (await _confirmDeleteContact(l10n, contact)) {
+      await _deleteContact(contact);
+    }
+  }
+
+  Future<bool> _confirmDeleteContact(
+    AppLocalizations l10n,
+    Contact contact,
+  ) async {
     final count = await widget.entryRepository
         .listByContact(contact.id!)
         .then((list) => list.length);
@@ -207,29 +224,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _deleteContact(Contact contact) async {
     // Capture the entries first so undo can restore the cascade.
-    final removedEntries =
-        await widget.entryRepository.listByContact(contact.id!);
+    final removedEntries = await widget.entryRepository.listByContact(
+      contact.id!,
+    );
     await widget.repository.delete(contact.id!);
     if (!mounted) return;
     setState(_load);
     final l10n = AppLocalizations.of(context);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(l10n.contactDeleted),
-        action: SnackBarAction(
-          label: l10n.undo,
-          onPressed: () async {
-            final restored =
-                await widget.repository.add(contact.copyWith(id: null));
-            for (final e in removedEntries) {
-              await widget.entryRepository
-                  .add(e.copyWith(id: null, contactId: restored.id));
-            }
-            if (mounted) setState(_load);
-          },
+      ..showSnackBar(
+        SnackBar(
+          content: Text(l10n.contactDeleted),
+          action: SnackBarAction(
+            label: l10n.undo,
+            onPressed: () async {
+              final restored = await widget.repository.add(
+                contact.copyWith(id: null),
+              );
+              for (final e in removedEntries) {
+                await widget.entryRepository.add(
+                  e.copyWith(id: null, contactId: restored.id),
+                );
+              }
+              if (mounted) setState(_load);
+            },
+          ),
         ),
-      ));
+      );
   }
 
   Future<void> _editContact(Contact contact) async {
@@ -260,18 +282,24 @@ class _HomeScreenState extends State<HomeScreen> {
           : l10n.balanceOwedByMe(amount);
       color = balance.isOwedToMe ? _green : _red;
     }
-    return ListTile(
-      leading: CircleAvatar(child: Text(_initial(contact.name))),
-      title: Text(contact.name),
-      subtitle: contact.phone == null ? null : Text(contact.phone!),
-      trailing: Text(
-        label,
-        style: Theme.of(context)
-            .textTheme
-            .bodyMedium
-            ?.copyWith(color: color, fontWeight: FontWeight.w600),
+    // Builder so the long-press callback gets a context whose RenderObject is
+    // this tile (not the enclosing list), giving the overlay its anchor rect.
+    return Builder(
+      builder: (tileContext) => ListTile(
+        leading: CircleAvatar(child: Text(_initial(contact.name))),
+        title: Text(contact.name),
+        subtitle: contact.phone == null ? null : Text(contact.phone!),
+        trailing: Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        onTap: () => _openContact(contact),
+        onLongPress: () =>
+            _showContactActions(tileContext, l10n, contact, balance),
       ),
-      onTap: () => _openContact(contact),
     );
   }
 
@@ -295,10 +323,7 @@ class _CurrencyLens extends StatelessWidget {
       child: SegmentedButton<Currency>(
         segments: [
           for (final currency in Currency.values)
-            ButtonSegment(
-              value: currency,
-              label: Text(currency.code),
-            ),
+            ButtonSegment(value: currency, label: Text(currency.code)),
         ],
         selected: {selected},
         showSelectedIcon: false,
@@ -370,10 +395,10 @@ class _TotalTile extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             amount,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(color: color, fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),

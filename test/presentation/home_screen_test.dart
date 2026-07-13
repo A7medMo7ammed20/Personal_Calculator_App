@@ -34,7 +34,8 @@ void main() {
 
   tearDown(() => appDb.close());
 
-  testWidgets('swipe-to-delete a contact warns with the entry count', (tester) async {
+  testWidgets('long-press delete warns a contact with the entry count',
+      (tester) async {
     final contact = await contacts.add(const Contact(name: 'Sami'));
     await entries.add(Entry(
       contactId: contact.id!, amount: 10, direction: Direction.owedToMe,
@@ -50,7 +51,14 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    await tester.drag(find.byType(Dismissible).first, const Offset(500, 0));
+    // Long-press the contact tile → floating Edit/Delete buttons appear.
+    await tester.longPress(find.byType(ListTile).first);
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.edit), findsOneWidget);
+    expect(find.byIcon(Icons.delete), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.delete));
     await tester.pumpAndSettle();
 
     expect(find.text('Delete contact?'), findsOneWidget);
