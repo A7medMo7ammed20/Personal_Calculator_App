@@ -1,0 +1,12 @@
+# flutter_native_splash — the static native splash shown before Flutter boots.
+# The animated DaftarSplash widget takes over once the engine is up.
+# Run:  dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#14746F"
+  image: "assets/branding/splash_logo.png"   # white mark + wordmark, centred
+  android_12:
+    color: "#14746F"
+    image: "assets/branding/logo_foreground.png"
+    icon_background_color: "#14746F"
+  ios: true
+  android: true

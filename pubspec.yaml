@@ -51,6 +51,8 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   sqflite_common_ffi: ^2.4.2
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -122,3 +124,29 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Adaptive launcher icon (Android). Teal #14746F is baked here and does NOT
+# follow the user's chosen accent (ADR 0002). Regenerate with:
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/branding/logo_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#14746F"
+  adaptive_icon_foreground: "assets/branding/logo_foreground.png"
+
+# Native splash: Teal field, white dāl/open-D monogram over the دفتر · Daftar
+# wordmark. Baked at build time (does not follow the accent). The animated
+# DaftarSplash (lib/branding/daftar_splash.dart) takes over once Flutter boots.
+# Regenerate with:
+#   dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#14746F"
+  image: "assets/branding/splash_logo.png"
+  android: true
+  ios: false
+  web: false
+  android_12:
+    color: "#14746F"
+    image: "assets/branding/logo_foreground.png"
