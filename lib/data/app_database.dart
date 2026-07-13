@@ -14,7 +14,7 @@ class AppDatabase {
 
   /// Current schema version. Bump this and handle the delta in [_migrate]
   /// whenever the schema changes.
-  static const int schemaVersion = 1;
+  static const int schemaVersion = 2;
 
   static const String _defaultFileName = 'debt_ledger.db';
 
@@ -52,10 +52,18 @@ class AppDatabase {
     await db.execute('PRAGMA foreign_keys = ON');
   }
 
-  /// Applies schema changes for every version in `(from, to]`.
-  ///
-  /// Empty at version 1 — the schema is introduced by later slices.
+  /// Applies schema changes for every version in `(from, to]`. Each `if (from <
+  /// N)` block owns the delta introduced at version N, so a fresh install
+  /// (from == 0) and an upgrade both land on the same schema.
   Future<void> _migrate(Database db, int from, int to) async {
-    // No tables yet. Future slices add: if (from < 2) { create contacts... }
+    if (from < 2) {
+      await db.execute('''
+        CREATE TABLE contacts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          phone TEXT
+        )
+      ''');
+    }
   }
 }

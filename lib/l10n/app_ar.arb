@@ -1,5 +1,10 @@
 {
   "@@locale": "ar",
   "appTitle": "دفتر الديون",
-  "homeEmpty": "لا توجد جهات اتصال بعد"
+  "homeEmpty": "لا توجد جهات اتصال بعد",
+  "addContact": "إضافة جهة اتصال",
+  "contactName": "الاسم",
+  "contactPhone": "الهاتف (اختياري)",
+  "nameRequired": "الاسم مطلوب",
+  "save": "حفظ"
 }

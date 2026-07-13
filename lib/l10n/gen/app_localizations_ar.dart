@@ -13,4 +13,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get homeEmpty => 'لا توجد جهات اتصال بعد';
+
+  @override
+  String get addContact => 'إضافة جهة اتصال';
+
+  @override
+  String get contactName => 'الاسم';
+
+  @override
+  String get contactPhone => 'الهاتف (اختياري)';
+
+  @override
+  String get nameRequired => 'الاسم مطلوب';
+
+  @override
+  String get save => 'حفظ';
 }

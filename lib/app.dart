@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:debt_ledger/l10n/gen/app_localizations.dart';
 
+import 'data/contact_repository.dart';
 import 'presentation/home/home_screen.dart';
 
 /// Root widget: wires theming (light/dark following the system), localization
 /// (Arabic + English with RTL) and the home screen.
 class DebtLedgerApp extends StatelessWidget {
-  const DebtLedgerApp({super.key});
+  const DebtLedgerApp({super.key, required this.contactRepository});
+
+  final ContactRepository contactRepository;
 
   static const Color _seed = Color(0xFF2E7D5B); // ledger green
 
@@ -29,7 +32,7 @@ class DebtLedgerApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      home: const HomeScreen(),
+      home: HomeScreen(repository: contactRepository),
     );
   }
 }
