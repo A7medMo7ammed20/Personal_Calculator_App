@@ -172,4 +172,28 @@ void main() {
     expect(find.text('Lunch'), findsOneWidget);
     expect(find.text('Taxi'), findsNothing);
   });
+
+  testWidgets('swipe-to-delete asks for confirmation then removes on confirm',
+      (tester) async {
+    await entries.add(seed(contact.id!, Direction.owedToMe, 150));
+
+    await tester.pumpWidget(_wrap(
+      const Locale('en'),
+      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
+    ));
+    await tester.pumpAndSettle();
+
+    // Swipe the entry tile toward the end (LTR: to the right) = delete.
+    await tester.drag(find.byType(Dismissible).first, const Offset(500, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delete entry?'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    // Balance falls back to settled; an undo SnackBar appears.
+    expect(find.text('Settled'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
+  });
 }
