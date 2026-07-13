@@ -4,6 +4,7 @@ import 'package:debt_ledger/data/entry_repository.dart';
 import 'package:debt_ledger/domain/contact.dart';
 import 'package:debt_ledger/domain/currency.dart';
 import 'package:debt_ledger/domain/entry.dart';
+import 'package:debt_ledger/domain/period.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -161,5 +162,52 @@ void main() {
       a.id!: DateTime(2026, 7, 12),
       b.id!: DateTime(2026, 6, 1),
     });
+  });
+
+  test('entriesInRange returns only the lens currency within [start, end)',
+      () async {
+    final a = await contacts.add(const Contact(name: 'A'));
+    final june = await entries.add(
+      inCurrency(a.id!, Currency.sar, DateTime(2026, 6, 30, 23, 59)),
+    );
+    final julyStart = await entries.add(
+      inCurrency(a.id!, Currency.sar, DateTime(2026, 7, 1)), // start inclusive
+    );
+    final julyMid = await entries.add(
+      inCurrency(a.id!, Currency.sar, DateTime(2026, 7, 20)),
+    );
+    await entries.add(
+      inCurrency(a.id!, Currency.sar, DateTime(2026, 8, 1)), // end exclusive
+    );
+    await entries.add(
+      inCurrency(a.id!, Currency.yer, DateTime(2026, 7, 10)), // other currency
+    );
+
+    final range = DateRange(DateTime(2026, 7, 1), DateTime(2026, 8, 1));
+    final inJuly = await entries.entriesInRange(Currency.sar, range);
+
+    expect(
+      inJuly.map((e) => e.id).toSet(),
+      {julyStart.id, julyMid.id},
+    );
+    expect(inJuly.map((e) => e.id), isNot(contains(june.id)));
+  });
+
+  test('the all-time balance is unaffected by any period query', () async {
+    final a = await contacts.add(const Contact(name: 'A'));
+    await entries.add(inCurrency(a.id!, Currency.sar, DateTime(2020, 1, 1)));
+    await entries.add(inCurrency(a.id!, Currency.sar, DateTime(2026, 7, 20)));
+
+    final allTime = await entries.balancesByCurrency(Currency.sar);
+    // Query a narrow window (only the 2026 entry falls inside).
+    await entries.entriesInRange(
+      Currency.sar,
+      DateRange(DateTime(2026, 7, 1), DateTime(2026, 8, 1)),
+    );
+    final afterWindowQuery = await entries.balancesByCurrency(Currency.sar);
+
+    // Balance stays the full all-time net (200 = 100 + 100), never windowed.
+    expect(allTime[a.id!]!.signed, 200);
+    expect(afterWindowQuery[a.id!]!.signed, allTime[a.id!]!.signed);
   });
 }

@@ -43,5 +43,14 @@
   "sortByActivity": "الأحدث",
   "sortByName": "الاسم",
   "sortByBalanceSize": "الرصيد",
+  "periodLabel": "الفترة",
+  "periodAllTime": "كل الوقت",
+  "periodThisMonth": "هذا الشهر",
+  "periodLastMonth": "الشهر الماضي",
+  "periodThisYear": "هذه السنة",
+  "periodCustom": "مخصص",
+  "flowLent": "المدفوع",
+  "flowReceived": "المقبوض",
+  "homeNoActivityInPeriod": "لا نشاط في هذه الفترة",
   "summaryTitle": "الملخّص حتى {date}"
 }

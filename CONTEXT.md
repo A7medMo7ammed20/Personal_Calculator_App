@@ -54,7 +54,14 @@ Optional biometric/device-PIN lock (off by default) via the OS. No custom PIN is
 ### Period filter
 A time-range selector (This month / Last month / This year / Custom / All time) shared by the home screen and the analysis graph.
 
-On the **home screen** it is a **visibility filter**, never a balance filter: it controls which Contacts appear (those with activity in range) and turns the grand-total header into a **flow** figure for the range (total lent / total received), while each Contact row still shows its **true, all-time outstanding Balance**. A Balance is cumulative and all-time by definition — it is never recomputed over a window (a windowed balance would falsely read 0 for an old, unpaid debt). Windowed math lives only in the analysis graph.
+On the **home screen** it is a **visibility filter**, never a balance filter: it controls which Contacts appear (those with activity in range) and turns the grand-total header into a [[Flow]] figure for the range (total lent / total received), while each Contact row still shows its **true, all-time outstanding Balance**. A Balance is cumulative and all-time by definition — it is never recomputed over a window (a windowed balance would falsely read 0 for an old, unpaid debt). Windowed math lives only in the analysis graph.
+
+At **All time** (the default) the header is *not* flow — it shows the all-time net-position totals ([[Balance]]-based "owed to you" / "you owe"). The header switches to [[Flow]] only when a **bounded** period (This/Last month, This year, Custom) is active. Periods are calendar ranges in local time; the filter composes as period → search → sort, and the flow header follows the period alone (search never changes it).
+
+### Flow
+The **gross directional movement** of money over a window, in one currency: **Lent** = the sum of every **owed-to-me** [[Entry]] amount in range; **Received** = the sum of every **owed-by-me** amount in range. Gross, not netted — a Contact who took +1000 and repaid −300 in the window contributes 1000 to Lent *and* 300 to Received. Distinct from [[Balance]] (a net, all-time position): flow is per-entry and windowed. Shown as the home header under a bounded [[Period filter]] and as the basis of the [[Analysis graph]] (#8).
+
+- Arabic: الحركة (المدفوع / المقبوض)
 
 ### Activity
 A Contact's **most recent [[Entry]] date within the current currency lens** — the
