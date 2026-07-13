@@ -10,6 +10,7 @@ import '../../domain/entry_sort.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../entries/add_entry_screen.dart';
 import '../money_format.dart';
+import '../theme/theme_context.dart';
 import '../widgets/item_actions_overlay.dart';
 import 'running_summary_sheet.dart';
 
@@ -36,10 +37,6 @@ class ContactScreen extends StatefulWidget {
 }
 
 class _ContactScreenState extends State<ContactScreen> {
-  // Owed-to-me green and owed-by-me red, distinct in both light and dark.
-  static const Color _green = Color(0xFF2E7D5B);
-  static const Color _red = Color(0xFFC0392B);
-
   late Future<List<Entry>> _entries;
 
   final _searchController = TextEditingController();
@@ -157,8 +154,9 @@ class _ContactScreenState extends State<ContactScreen> {
   }
 
   Color _balanceColor(Balance balance) {
-    if (balance.isSettled) return Theme.of(context).colorScheme.outline;
-    return balance.isOwedToMe ? _green : _red;
+    final semantics = context.semanticColors;
+    if (balance.isSettled) return semantics.settled;
+    return balance.isOwedToMe ? semantics.owedToMe : semantics.owedByMe;
   }
 
   /// Long-press an entry row → floating Edit/Delete buttons beside it (#5).
@@ -193,7 +191,7 @@ class _ContactScreenState extends State<ContactScreen> {
         ),
         ItemAction(
           icon: Icons.delete,
-          color: _red,
+          color: Theme.of(tileContext).colorScheme.error,
           label: l10n.delete,
           onSelected: () => _deleteEntryWithConfirm(l10n, entry),
         ),
@@ -272,7 +270,7 @@ class _ContactScreenState extends State<ContactScreen> {
     Entry entry,
   ) {
     final toMe = entry.direction == Direction.owedToMe;
-    final color = toMe ? _green : _red;
+    final color = toMe ? context.semanticColors.owedToMe : context.semanticColors.owedByMe;
     final date = DateFormat.yMMMd(
       Localizations.localeOf(context).toString(),
     ).add_jm().format(entry.createdAt);
