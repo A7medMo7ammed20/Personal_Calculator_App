@@ -415,6 +415,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Summary up to {date}'**
   String summaryTitle(String date);
+
+  /// Title of the Settings screen (reached from the home overflow menu).
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// Settings section header for the brand accent picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Accent color'**
+  String get settingsAccent;
+
+  /// Settings section header for the light/dark brightness picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsAppearance;
+
+  /// Brightness option: follow the OS setting (default).
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get themeSystem;
+
+  /// Brightness option: always light.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// Brightness option: always dark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// Name of the Teal accent (default).
+  ///
+  /// In en, this message translates to:
+  /// **'Teal'**
+  String get accentTeal;
+
+  /// Name of the Indigo accent.
+  ///
+  /// In en, this message translates to:
+  /// **'Indigo'**
+  String get accentIndigo;
+
+  /// Name of the Plum accent.
+  ///
+  /// In en, this message translates to:
+  /// **'Plum'**
+  String get accentPlum;
+
+  /// Name of the Ocean Blue accent.
+  ///
+  /// In en, this message translates to:
+  /// **'Ocean'**
+  String get accentOcean;
 }
 
 class _AppLocalizationsDelegate

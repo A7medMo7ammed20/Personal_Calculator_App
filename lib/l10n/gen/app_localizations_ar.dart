@@ -184,4 +184,34 @@ class AppLocalizationsAr extends AppLocalizations {
   String summaryTitle(String date) {
     return 'الملخّص حتى $date';
   }
+
+  @override
+  String get settingsTitle => 'الإعدادات';
+
+  @override
+  String get settingsAccent => 'لون التمييز';
+
+  @override
+  String get settingsAppearance => 'المظهر';
+
+  @override
+  String get themeSystem => 'حسب النظام';
+
+  @override
+  String get themeLight => 'فاتح';
+
+  @override
+  String get themeDark => 'داكن';
+
+  @override
+  String get accentTeal => 'أزرق مخضر';
+
+  @override
+  String get accentIndigo => 'نيلي';
+
+  @override
+  String get accentPlum => 'برقوقي';
+
+  @override
+  String get accentOcean => 'أزرق محيطي';
 }

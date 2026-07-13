@@ -14,7 +14,7 @@ class AppDatabase {
 
   /// Current schema version. Bump this and handle the delta in [_migrate]
   /// whenever the schema changes.
-  static const int schemaVersion = 3;
+  static const int schemaVersion = 4;
 
   static const String _defaultFileName = 'debt_ledger.db';
 
@@ -84,6 +84,17 @@ class AppDatabase {
       await db.execute(
         'CREATE INDEX idx_entries_contact_id ON entries (contact_id)',
       );
+    }
+    if (from < 4) {
+      // A simple key/value store for app preferences (accent + brightness).
+      // Living in the same file means the choices travel with the Backup
+      // (ADR 0001) at no extra cost.
+      await db.execute('''
+        CREATE TABLE settings (
+          key TEXT PRIMARY KEY,
+          value TEXT NOT NULL
+        )
+      ''');
     }
   }
 }

@@ -159,5 +159,25 @@
   "@summaryTitle": {
     "description": "Title of the running-summary bottom sheet, showing the tapped entry's date.",
     "placeholders": { "date": { "type": "String", "example": "Mar 3, 2026" } }
-  }
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": { "description": "Title of the Settings screen (reached from the home overflow menu)." },
+  "settingsAccent": "Accent color",
+  "@settingsAccent": { "description": "Settings section header for the brand accent picker." },
+  "settingsAppearance": "Appearance",
+  "@settingsAppearance": { "description": "Settings section header for the light/dark brightness picker." },
+  "themeSystem": "System",
+  "@themeSystem": { "description": "Brightness option: follow the OS setting (default)." },
+  "themeLight": "Light",
+  "@themeLight": { "description": "Brightness option: always light." },
+  "themeDark": "Dark",
+  "@themeDark": { "description": "Brightness option: always dark." },
+  "accentTeal": "Teal",
+  "@accentTeal": { "description": "Name of the Teal accent (default)." },
+  "accentIndigo": "Indigo",
+  "@accentIndigo": { "description": "Name of the Indigo accent." },
+  "accentPlum": "Plum",
+  "@accentPlum": { "description": "Name of the Plum accent." },
+  "accentOcean": "Ocean",
+  "@accentOcean": { "description": "Name of the Ocean Blue accent." }
 }
