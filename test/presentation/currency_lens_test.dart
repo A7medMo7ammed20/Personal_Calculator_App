@@ -54,8 +54,38 @@ void main() {
     await tester.pumpWidget(_wrap(const Locale('en'), home()));
     await tester.pumpAndSettle();
 
+    // The lens is now the bottom tab bar (ADR 0003), still labelled SAR / YER.
     expect(find.text('SAR'), findsOneWidget);
     expect(find.text('YER'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
+  });
+
+  testWidgets('swiping the body horizontally changes the currency lens',
+      (tester) async {
+    final khaled = await contacts.add(const Contact(name: 'Khaled'));
+    await entries.add(entry(khaled.id!, Currency.sar, 100));
+    await entries.add(entry(khaled.id!, Currency.yer, 300));
+
+    await tester.pumpWidget(_wrap(const Locale('en'), home()));
+    await tester.pumpAndSettle();
+
+    // Default SAR lens.
+    expect(find.textContaining('100.00'), findsWidgets);
+    expect(find.textContaining('300.00'), findsNothing);
+
+    // Swipe left on the list → advance to the next lens (YER).
+    await tester.drag(find.byType(ListView), const Offset(-300, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('300.00'), findsWidgets);
+    expect(find.textContaining('100.00'), findsNothing);
+
+    // Swipe right → back to SAR.
+    await tester.drag(find.byType(ListView), const Offset(300, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('100.00'), findsWidgets);
+    expect(find.textContaining('300.00'), findsNothing);
   });
 
   testWidgets('switching the lens refilters totals and per-contact balances',

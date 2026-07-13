@@ -107,6 +107,38 @@ void main() {
     expect(find.text('Sara'), findsNothing);
   });
 
+  testWidgets('contact rows are phone-less: the number is not shown in-app',
+      (tester) async {
+    await contacts.add(const Contact(name: 'Ali', phone: '055 512 3456'));
+
+    await tester.pumpWidget(_wrap(
+      HomeScreen(repository: contacts, entryRepository: entries),
+    ));
+    await tester.pumpAndSettle();
+
+    // The name shows; the phone stays for PDF/WhatsApp only (design-system.md).
+    expect(find.text('Ali'), findsOneWidget);
+    expect(find.text('055 512 3456'), findsNothing);
+  });
+
+  testWidgets('home shows one summary card with both all-time totals',
+      (tester) async {
+    final ali = await contacts.add(const Contact(name: 'Ali'));
+    await entries.add(Entry(
+      contactId: ali.id!, amount: 100, direction: Direction.owedToMe,
+      currency: Currency.sar, createdAt: DateTime(2026, 7, 13),
+    ));
+
+    await tester.pumpWidget(_wrap(
+      HomeScreen(repository: contacts, entryRepository: entries),
+    ));
+    await tester.pumpAndSettle();
+
+    // The unified card carries both directional totals at all time.
+    expect(find.text('Owed to you'), findsOneWidget);
+    expect(find.text('You owe'), findsOneWidget);
+  });
+
   Future<void> addEntry(
     int contactId, {
     required double amount,
