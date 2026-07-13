@@ -62,5 +62,9 @@
   "accentTeal": "أزرق مخضر",
   "accentIndigo": "نيلي",
   "accentPlum": "برقوقي",
-  "accentOcean": "أزرق محيطي"
+  "accentOcean": "أزرق محيطي",
+  "analysisTitle": "التحليل",
+  "analysisEmpty": "لا يوجد نشاط بعملة {currency} بعد",
+  "breakdownTitle": "التغيّرات · {interval}",
+  "breakdownEmpty": "لا حركات في هذه الفترة"
 }

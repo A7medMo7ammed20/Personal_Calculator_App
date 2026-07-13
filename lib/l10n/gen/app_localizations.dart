@@ -475,6 +475,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ocean'**
   String get accentOcean;
+
+  /// Title of the Analysis graph screen (reached from the home overflow menu) (#8).
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis'**
+  String get analysisTitle;
+
+  /// Shown on the Analysis graph when the active currency lens has no entries at all.
+  ///
+  /// In en, this message translates to:
+  /// **'No {currency} activity yet'**
+  String analysisEmpty(String currency);
+
+  /// Header of the drill-down sheet: which interval's per-contact changes are shown (#8).
+  ///
+  /// In en, this message translates to:
+  /// **'Changes · {interval}'**
+  String breakdownTitle(String interval);
+
+  /// Shown in the drill-down sheet when the tapped interval is a flat, carried-forward gap with no entries.
+  ///
+  /// In en, this message translates to:
+  /// **'No entries in this interval'**
+  String get breakdownEmpty;
 }
 
 class _AppLocalizationsDelegate

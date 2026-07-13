@@ -214,4 +214,20 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get accentOcean => 'أزرق محيطي';
+
+  @override
+  String get analysisTitle => 'التحليل';
+
+  @override
+  String analysisEmpty(String currency) {
+    return 'لا يوجد نشاط بعملة $currency بعد';
+  }
+
+  @override
+  String breakdownTitle(String interval) {
+    return 'التغيّرات · $interval';
+  }
+
+  @override
+  String get breakdownEmpty => 'لا حركات في هذه الفترة';
 }

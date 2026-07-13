@@ -10,6 +10,7 @@ import '../../domain/flow.dart';
 import '../../domain/ledger_totals.dart';
 import '../../domain/period.dart';
 import '../../l10n/gen/app_localizations.dart';
+import '../analysis/analysis_graph_screen.dart';
 import '../contacts/add_contact_screen.dart';
 import '../contacts/contact_screen.dart';
 import '../money_format.dart';
@@ -17,10 +18,11 @@ import '../settings/settings_screen.dart';
 import '../theme/theme_context.dart';
 import '../theme/theme_controller.dart';
 import '../widgets/item_actions_overlay.dart';
+import '../widgets/period_selector.dart';
 
-/// Global destinations behind the home overflow menu (⋮). Settings today;
-/// Backup joins when it ships.
-enum _HomeMenuAction { settings }
+/// Global destinations behind the home overflow menu (⋮). The Analysis graph
+/// (#8) and Settings live here; Backup joins when it ships (ADR 0003/0004).
+enum _HomeMenuAction { analysis, settings }
 
 /// Home screen: a global currency lens, per-currency grand totals, and the
 /// Contact list showing each Contact's balance in the selected currency. The
@@ -186,6 +188,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onMenuAction(_HomeMenuAction action, AppLocalizations l10n) {
     switch (action) {
+      case _HomeMenuAction.analysis:
+        _openAnalysis();
       case _HomeMenuAction.settings:
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -194,6 +198,32 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
     }
+  }
+
+  /// Opens the Analysis graph carrying the current lens + period; on return it
+  /// adopts any change made there so home and the graph stay in sync (ADR 0004
+  /// — return-on-pop, no lifted controller).
+  Future<void> _openAnalysis() async {
+    final result = await Navigator.of(context).push<AnalysisGraphResult>(
+      MaterialPageRoute(
+        builder: (_) => AnalysisGraphScreen(
+          entryRepository: widget.entryRepository,
+          contactRepository: widget.repository,
+          currency: _currency,
+          period: _period,
+          customStart: _customStart,
+          customEnd: _customEnd,
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _currency = result.currency;
+      _period = result.period;
+      _customStart = result.customStart;
+      _customEnd = result.customEnd;
+      _load();
+    });
   }
 
   Future<void> _addContact() async {
@@ -232,6 +262,16 @@ class _HomeScreenState extends State<HomeScreen> {
               // (ADR 0003); Backup joins Settings here when it lands.
               onSelected: (action) => _onMenuAction(action, l10n),
               itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _HomeMenuAction.analysis,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.show_chart),
+                      SizedBox(width: context.spacing.md),
+                      Text(l10n.analysisTitle),
+                    ],
+                  ),
+                ),
                 PopupMenuItem(
                   value: _HomeMenuAction.settings,
                   child: Row(
@@ -293,7 +333,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       _FlowHeader(flow: data.flow!, currency: _currency)
                     else
                       _TotalsHeader(totals: data.totals, currency: _currency),
-                    _PeriodSelector(period: _period, onSelected: _selectPeriod),
+                    PeriodSelector(period: _period, onSelected: _selectPeriod),
                     _ContactSearchSortBar(
                       controller: _searchController,
                       sortField: _sortField,
@@ -503,54 +543,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-/// The home period filter (#7): a visibility filter over the Contact list plus
-/// the [[Flow]] header mode. Custom opens a date-range picker (handled upstream).
-class _PeriodSelector extends StatelessWidget {
-  const _PeriodSelector({required this.period, required this.onSelected});
-
-  final PeriodOption period;
-  final ValueChanged<PeriodOption> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    String label(PeriodOption p) => switch (p) {
-      PeriodOption.allTime => l10n.periodAllTime,
-      PeriodOption.thisMonth => l10n.periodThisMonth,
-      PeriodOption.lastMonth => l10n.periodLastMonth,
-      PeriodOption.thisYear => l10n.periodThisYear,
-      PeriodOption.custom => l10n.periodCustom,
-    };
-    return Align(
-      alignment: AlignmentDirectional.centerStart,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-        child: PopupMenuButton<PeriodOption>(
-          tooltip: l10n.periodLabel,
-          initialValue: period,
-          onSelected: onSelected,
-          itemBuilder: (context) => [
-            for (final p in PeriodOption.values)
-              CheckedPopupMenuItem(
-                value: p,
-                checked: p == period,
-                child: Text(label(p)),
-              ),
-          ],
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.event, size: 18),
-              const SizedBox(width: 6),
-              Text(label(period)),
-              const Icon(Icons.arrow_drop_down),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// The grand-total header in [[Flow]] mode: gross lent / received for the active
 /// window. Replaces the net-position [_TotalsHeader] when a period is bounded.

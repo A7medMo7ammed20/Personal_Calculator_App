@@ -113,6 +113,26 @@ class EntryRepository {
     return rows.map(_fromRow).toList();
   }
 
+  /// Every Entry in one [currency] across all Contacts, **ascending** by date
+  /// (then id), optionally only those strictly before [upTo]. Feeds the Analysis
+  /// graph's cumulative series (#8) — the ascending order and the `upTo` bound
+  /// let it carry in the opening [[Balance]] from before a window. See ADR 0004.
+  Future<List<Entry>> listByCurrency(Currency currency, {DateTime? upTo}) async {
+    final db = await _appDb.open();
+    final rows = await db.query(
+      table,
+      where: upTo == null
+          ? 'currency = ?'
+          : 'currency = ? AND created_at < ?',
+      whereArgs: [
+        currency.code,
+        if (upTo != null) upTo.millisecondsSinceEpoch,
+      ],
+      orderBy: 'created_at ASC, id ASC',
+    );
+    return rows.map(_fromRow).toList();
+  }
+
   Map<String, Object?> _toRow(Entry e) => {
     'contact_id': e.contactId,
     'amount': e.amount,

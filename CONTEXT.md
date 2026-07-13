@@ -17,7 +17,7 @@ A person you have dealings with — has a name and phone number. In the UI, one 
 ### Entry
 A single line item: an amount owed in one direction, on a date/time, with a description. Replaces the earlier fuzzy word "expense" — entries are **debts**, not expenses (nobody is spending; money is owed or repaid).
 
-- Arabic: حركة / معاملة
+- Arabic: **معاملة** (transaction). Covers both directions (a debt *or* a repayment). The older label حركة is retired for Entry — it was overloaded with [[Flow]] (الحركة) and read as meaningless to users; حركة/الحركة now means Flow only.
 
 ### Direction
 Whether an Entry is owed **to me** or **by me**. Set per Entry (not per Contact) — the same Contact can have entries in both directions.
@@ -26,7 +26,7 @@ Whether an Entry is owed **to me** or **by me**. Set per Entry (not per Contact)
 - Owed by me — I owe the Contact. (Arabic: عليَّ)
 
 ### Currency
-SAR or YER. Chosen per Entry. A single Contact may hold entries in both currencies, but each currency has its **own independent balance** — the two are never summed together. In the UI, currency is a **global lens**: swipeable **bottom tabs** (SAR / YER) with an animated active-tab indicator select the currency, and the entire app (people list, per-currency grand totals, each Contact's entries and balance) reflects only the selected currency. Switching the global lens refilters everything. The Contact page inherits this global selection rather than having its own tab.
+SAR or YER. Chosen per Entry. A single Contact may hold entries in both currencies, but each currency has its **own independent balance** — the two are never summed together. In the UI, currency is a **global lens**: **bottom tabs** (SAR / YER) — a floating pill bar with an animated indicator that slides to the active currency — select the currency, and the entire app (people list, per-currency grand totals, each Contact's entries and balance) reflects only the selected currency. The lens switches by **tapping** a tab (not by swiping the body; horizontal swipe is reserved for row actions — see [ADR 0005](docs/adr/0005-row-swipe-actions-and-tap-only-currency-lens.md)). Switching the global lens refilters everything. The Contact page inherits this global selection rather than having its own tab.
 
 The home header shows two per-currency totals for the selected currency: **Total owed to you** and **Total you owe**.
 
@@ -78,7 +78,13 @@ this concept restricted to a time window.
 - Arabic: النشاط
 
 ### Analysis graph
-A per-currency (following the global currency lens) chart of the **cumulative net balance over time** — the running total position across all Contacts. Rising = net owed-to-me increasing; falling = repayments or new owed-by-me. X-axis range follows the [[period filter]]. Never mixes currencies into one line. **Drill-down:** tapping a point shows a **contact-level breakdown** of the entries in that interval (who drove the increase/decrease). Optional secondary flow-bars view is deferred.
+A per-currency (following the global currency lens) chart of the **cumulative net balance over time** — the running total position across all Contacts. Rising = net owed-to-me increasing; falling = repayments or new owed-by-me. Never mixes currencies into one line.
+
+It is a **view onto the real all-time running [[Balance]], windowed only in X**: under a bounded [[Period filter]] the line **carries in the opening balance** from before the window (July starts at June's closing position, not at zero) — the balance is never *recomputed* over the window, only *clipped* in view. At **All time** the X axis spans first-entry-date → today. A currency with no entries shows a calm per-lens empty state.
+
+Points are **adaptive calendar buckets** whose granularity follows the visible span (daily for month-scale, weekly for quarter/year-scale, monthly for multi-year); empty buckets **carry the balance forward** (a flat segment, never a drop to zero). **Drill-down:** tapping a point lists that interval's entries as a **per-Contact net delta** (green/red, sorted by magnitude), and the deltas sum to the segment's rise/fall — answering *who moved the line, and which way*.
+
+The graph is a **global (all-Contacts) destination** reached from the home overflow (⋮), not a per-Contact view (see [ADR 0004](docs/adr/0004-analysis-graph-rendering-and-windowing.md); this revises [ADR 0003](docs/adr/0003-bottom-tab-currency-lens.md)). Optional secondary flow-bars view is deferred.
 
 ### Balance
 The running total for one Contact in one currency — the sum of all signed Entry amounts (repayment is just an opposite-direction Entry; there is no separate settle concept).

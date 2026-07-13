@@ -210,4 +210,39 @@ void main() {
     expect(allTime[a.id!]!.signed, 200);
     expect(afterWindowQuery[a.id!]!.signed, allTime[a.id!]!.signed);
   });
+
+  test('listByCurrency returns one currency ascending, across all contacts',
+      () async {
+    final a = await contacts.add(const Contact(name: 'A'));
+    final b = await contacts.add(const Contact(name: 'B'));
+    final mar = await entries.add(inCurrency(a.id!, Currency.sar, DateTime(2026, 3, 1)));
+    final may = await entries.add(inCurrency(b.id!, Currency.sar, DateTime(2026, 5, 1)));
+    final apr = await entries.add(inCurrency(a.id!, Currency.sar, DateTime(2026, 4, 1)));
+    await entries.add(inCurrency(a.id!, Currency.yer, DateTime(2026, 4, 15)));
+
+    final list = await entries.listByCurrency(Currency.sar);
+
+    // Only SAR, every contact, oldest → newest.
+    expect(list.map((e) => e.id), [mar.id, apr.id, may.id]);
+  });
+
+  test('listByCurrency upTo is exclusive of the given instant', () async {
+    final a = await contacts.add(const Contact(name: 'A'));
+    final before = await entries.add(
+      inCurrency(a.id!, Currency.sar, DateTime(2026, 6, 30, 23, 59)),
+    );
+    await entries.add(
+      inCurrency(a.id!, Currency.sar, DateTime(2026, 7, 1)), // == upTo, excluded
+    );
+    await entries.add(
+      inCurrency(a.id!, Currency.sar, DateTime(2026, 7, 5)), // after, excluded
+    );
+
+    final list = await entries.listByCurrency(
+      Currency.sar,
+      upTo: DateTime(2026, 7, 1),
+    );
+
+    expect(list.map((e) => e.id), [before.id]);
+  });
 }

@@ -4,7 +4,15 @@ Date: 2026-07-13
 
 ## Status
 
-Accepted
+Accepted. **Amended 2026-07-13 by [ADR 0004](0004-analysis-graph-rendering-and-windowing.md):** the
+Analysis graph (#8) is an **all-Contacts** view, so it is *not* placed inside the Contact screen as
+the Decision below anticipated — it is a global destination behind the home overflow (⋮), alongside
+Settings and Backup. Per-contact Statements (#10) remain inside the Contact screen as written.
+
+**Also amended 2026-07-13 by [ADR 0005](0005-row-swipe-actions-and-tap-only-currency-lens.md):** the
+currency lens is **no longer swipeable** — horizontal swipe is reassigned to per-row swipe-to-reveal
+actions, and currency switches by **tapping** a bottom tab (restyled as a floating pill with an
+animated indicator). The lens-in-the-bottom-bar and overflow-⋮ decisions below stand.
 
 ## Context
 

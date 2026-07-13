@@ -179,5 +179,19 @@
   "accentPlum": "Plum",
   "@accentPlum": { "description": "Name of the Plum accent." },
   "accentOcean": "Ocean",
-  "@accentOcean": { "description": "Name of the Ocean Blue accent." }
+  "@accentOcean": { "description": "Name of the Ocean Blue accent." },
+  "analysisTitle": "Analysis",
+  "@analysisTitle": { "description": "Title of the Analysis graph screen (reached from the home overflow menu) (#8)." },
+  "analysisEmpty": "No {currency} activity yet",
+  "@analysisEmpty": {
+    "description": "Shown on the Analysis graph when the active currency lens has no entries at all.",
+    "placeholders": { "currency": { "type": "String", "example": "SAR" } }
+  },
+  "breakdownTitle": "Changes · {interval}",
+  "@breakdownTitle": {
+    "description": "Header of the drill-down sheet: which interval's per-contact changes are shown (#8).",
+    "placeholders": { "interval": { "type": "String", "example": "Jul 10, 2026" } }
+  },
+  "breakdownEmpty": "No entries in this interval",
+  "@breakdownEmpty": { "description": "Shown in the drill-down sheet when the tapped interval is a flat, carried-forward gap with no entries." }
 }

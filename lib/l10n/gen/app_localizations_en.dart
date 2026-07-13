@@ -212,4 +212,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accentOcean => 'Ocean';
+
+  @override
+  String get analysisTitle => 'Analysis';
+
+  @override
+  String analysisEmpty(String currency) {
+    return 'No $currency activity yet';
+  }
+
+  @override
+  String breakdownTitle(String interval) {
+    return 'Changes · $interval';
+  }
+
+  @override
+  String get breakdownEmpty => 'No entries in this interval';
 }
