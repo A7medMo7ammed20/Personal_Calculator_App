@@ -1,0 +1,11 @@
+{
+  "@@locale": "en",
+  "appTitle": "Debt Ledger",
+  "@appTitle": {
+    "description": "The application title shown on the home screen and task switcher."
+  },
+  "homeEmpty": "No contacts yet",
+  "@homeEmpty": {
+    "description": "Placeholder shown on the home screen when there are no contacts."
+  }
+}
