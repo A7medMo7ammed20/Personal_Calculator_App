@@ -196,4 +196,20 @@ void main() {
     expect(find.text('Settled'), findsOneWidget);
     expect(find.text('Undo'), findsOneWidget);
   });
+
+  testWidgets('tapping an entry opens the running summary sheet', (tester) async {
+    await entries.add(seed(contact.id!, Direction.owedToMe, 120));
+
+    await tester.pumpWidget(_wrap(
+      const Locale('en'),
+      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(ListTile).first);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Summary up to'), findsOneWidget);
+    expect(find.textContaining('Owed to you'), findsWidgets);
+  });
 }

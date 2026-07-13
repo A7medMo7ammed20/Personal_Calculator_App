@@ -10,6 +10,7 @@ import '../../domain/entry_sort.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../entries/add_entry_screen.dart';
 import '../money_format.dart';
+import 'running_summary_sheet.dart';
 
 /// The heart of the ledger: one Contact's Entries plus a live per-Contact
 /// [Balance]. Repayment is just an opposite-direction Entry — nothing special
@@ -130,7 +131,7 @@ class _ContactScreenState extends State<ContactScreen> {
                         itemCount: visible.length,
                         separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (context, index) =>
-                            _dismissibleEntry(context, l10n, visible[index]),
+                            _dismissibleEntry(context, l10n, entries, visible[index]),
                       ),
               ),
             ],
@@ -162,6 +163,7 @@ class _ContactScreenState extends State<ContactScreen> {
   Widget _dismissibleEntry(
     BuildContext context,
     AppLocalizations l10n,
+    List<Entry> allEntries,
     Entry entry,
   ) {
     final scheme = Theme.of(context).colorScheme;
@@ -191,7 +193,7 @@ class _ContactScreenState extends State<ContactScreen> {
         }
       },
       onDismissed: (_) => _deleteEntry(entry),
-      child: _entryTile(context, l10n, entry),
+      child: _entryTile(context, l10n, allEntries, entry),
     );
   }
 
@@ -250,7 +252,12 @@ class _ContactScreenState extends State<ContactScreen> {
     if (updated != null && mounted) setState(_load);
   }
 
-  Widget _entryTile(BuildContext context, AppLocalizations l10n, Entry entry) {
+  Widget _entryTile(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<Entry> allEntries,
+    Entry entry,
+  ) {
     final toMe = entry.direction == Direction.owedToMe;
     final color = toMe ? _green : _red;
     final date = DateFormat.yMMMd(
@@ -259,6 +266,12 @@ class _ContactScreenState extends State<ContactScreen> {
     final sign = toMe ? '+' : '−';
 
     return ListTile(
+      onTap: () => showRunningSummarySheet(
+        context,
+        entries: allEntries,
+        tapped: entry,
+        currency: widget.currency,
+      ),
       leading: CircleAvatar(
         backgroundColor: color.withValues(alpha: 0.15),
         foregroundColor: color,
