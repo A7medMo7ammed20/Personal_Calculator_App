@@ -14,7 +14,7 @@ class AppDatabase {
 
   /// Current schema version. Bump this and handle the delta in [_migrate]
   /// whenever the schema changes.
-  static const int schemaVersion = 2;
+  static const int schemaVersion = 3;
 
   static const String _defaultFileName = 'debt_ledger.db';
 
@@ -64,6 +64,26 @@ class AppDatabase {
           phone TEXT
         )
       ''');
+    }
+    if (from < 3) {
+      // Entries carry a `currency` column now so slice #4 (the currency lens)
+      // only adds filtering, not a migration. Cascade delete relies on
+      // `PRAGMA foreign_keys = ON` (set in _onConfigure).
+      await db.execute('''
+        CREATE TABLE entries (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          contact_id INTEGER NOT NULL,
+          amount REAL NOT NULL,
+          direction TEXT NOT NULL,
+          currency TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          description TEXT,
+          FOREIGN KEY (contact_id) REFERENCES contacts (id) ON DELETE CASCADE
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX idx_entries_contact_id ON entries (contact_id)',
+      );
     }
   }
 }

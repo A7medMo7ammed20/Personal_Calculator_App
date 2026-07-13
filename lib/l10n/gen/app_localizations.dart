@@ -139,6 +139,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get save;
+
+  /// Title/label for the add-entry action and screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Add entry'**
+  String get addEntry;
+
+  /// Label for the entry amount field.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get entryAmount;
+
+  /// Validation message when the amount field is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount'**
+  String get amountRequired;
+
+  /// Validation message when the amount is not a positive number.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount greater than zero'**
+  String get amountInvalid;
+
+  /// Direction toggle option: the contact owes the user (green).
+  ///
+  /// In en, this message translates to:
+  /// **'Owed to me'**
+  String get directionOwedToMe;
+
+  /// Direction toggle option: the user owes the contact (red).
+  ///
+  /// In en, this message translates to:
+  /// **'Owed by me'**
+  String get directionOwedByMe;
+
+  /// Label for the optional entry description field.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get entryDescription;
+
+  /// Label for the entry date/time picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Date & time'**
+  String get entryDateTime;
+
+  /// Placeholder on the contact page when it has no entries.
+  ///
+  /// In en, this message translates to:
+  /// **'No entries yet'**
+  String get contactEntriesEmpty;
+
+  /// Balance label when the contact owes the user (green).
+  ///
+  /// In en, this message translates to:
+  /// **'owes you {amount}'**
+  String balanceOwedToMe(String amount);
+
+  /// Balance label when the user owes the contact (red).
+  ///
+  /// In en, this message translates to:
+  /// **'you owe {amount}'**
+  String balanceOwedByMe(String amount);
+
+  /// Balance label when nothing is outstanding in either direction.
+  ///
+  /// In en, this message translates to:
+  /// **'Settled'**
+  String get balanceSettled;
 }
 
 class _AppLocalizationsDelegate
