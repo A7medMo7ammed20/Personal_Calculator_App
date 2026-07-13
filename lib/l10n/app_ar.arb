@@ -18,5 +18,7 @@
   "contactEntriesEmpty": "لا توجد حركات بعد",
   "balanceOwedToMe": "لك {amount}",
   "balanceOwedByMe": "عليك {amount}",
-  "balanceSettled": "مسدَّد"
+  "balanceSettled": "مسدَّد",
+  "homeTotalOwedToMe": "لك",
+  "homeTotalOwedByMe": "عليك"
 }

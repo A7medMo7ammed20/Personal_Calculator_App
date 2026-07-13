@@ -9,16 +9,19 @@ import '../../l10n/gen/app_localizations.dart';
 
 /// Form to add a new [Entry] under a Contact: amount, direction, date/time and
 /// an optional description. Pops with the saved [Entry] on success, or null if
-/// cancelled. Single currency this slice — defaults to [Currency.sar].
+/// cancelled. The [currency] is inherited from the global lens — there is no
+/// in-form currency picker (see CONTEXT.md).
 class AddEntryScreen extends StatefulWidget {
   const AddEntryScreen({
     super.key,
     required this.contactId,
     required this.repository,
+    required this.currency,
   });
 
   final int contactId;
   final EntryRepository repository;
+  final Currency currency;
 
   @override
   State<AddEntryScreen> createState() => _AddEntryScreenState();
@@ -81,7 +84,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         contactId: widget.contactId,
         amount: double.parse(_amountController.text.trim()),
         direction: _direction,
-        currency: Currency.sar,
+        currency: widget.currency,
         createdAt: _when,
         description: description.isEmpty ? null : description,
       ),
