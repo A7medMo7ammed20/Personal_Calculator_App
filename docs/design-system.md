@@ -10,9 +10,16 @@ Concrete values to implement against. The *reasoning* behind this system lives i
 ## Brand
 
 - **Name / wordmark:** Daftar · دفتر (one wordmark, both scripts)
-- **Logomark:** fused **D / د** monogram, white on the default-accent tile
-- **App icon & splash:** solid **Teal** rounded square, white mark; splash adds the
-  wordmark below. Baked at build time — does **not** follow the user's chosen accent.
+- **Logomark:** dual-script **دال / open-D** monogram — one continuous stroke that
+  reads as the Arabic **د** and an open Latin **D**, white on the Teal tile. Vector
+  source: `lib/branding/daftar_mark.dart` (`DaftarMarkPainter`, 240×240 path) and the
+  SVG masters in `assets/daftar_brand_assets/svg/`; raster exports in `assets/branding/`.
+- **App icon & splash:** solid **Teal** rounded square, white mark; the native splash
+  adds the دفتر · Daftar wordmark below, and the animated `DaftarSplash`
+  (`lib/branding/daftar_splash.dart`) draws the mark on at cold launch. Baked at build
+  time — does **not** follow the user's chosen accent.
+- **In-app:** `DaftarIconTile` sits in the home app-bar leading slot; the mark stays
+  Teal/white regardless of the active accent, per the golden rule.
 
 ## Colour
 

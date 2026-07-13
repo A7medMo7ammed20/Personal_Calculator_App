@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 400">
+<g transform="translate(190,20) scale(0.583)"><path d="M66 74 H150 C192 74 204 132 170 155 C146 171 106 173 84 165 C70 160 71 145 87 143" fill="none" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"></path></g>
+<line x1="212" y1="188" x2="308" y2="188" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="2"></line>
+<text x="260" y="270" text-anchor="middle" font-family="&#39;IBM Plex Sans Arabic&#39;,sans-serif" font-weight="600" font-size="72" fill="#FFFFFF" direction="rtl">دفتر</text>
+<text x="260" y="322" text-anchor="middle" font-family="&#39;IBM Plex Sans&#39;,sans-serif" font-weight="500" font-size="26" letter-spacing="1" fill="#FFFFFF" fill-opacity="0.85">Daftar</text>
+</svg>

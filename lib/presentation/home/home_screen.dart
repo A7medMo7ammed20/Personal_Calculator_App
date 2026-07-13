@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' hide Flow;
 
+import '../../branding/daftar_mark.dart';
 import '../../data/contact_repository.dart';
 import '../../data/entry_repository.dart';
 import '../../domain/balance.dart';
@@ -242,6 +243,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
+        // Brand mark in the leading slot — always Teal/white regardless of the
+        // user's in-app accent, per the brand rules. Title text stays as-is.
+        leading: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          child: DaftarIconTile(size: 32, radius: 8),
+        ),
         title: Text(l10n.appTitle),
         actions: [
           if (widget.themeController != null)

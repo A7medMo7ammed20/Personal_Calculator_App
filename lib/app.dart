@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:debt_ledger/l10n/gen/app_localizations.dart';
 
+import 'branding/daftar_splash.dart';
 import 'data/contact_repository.dart';
 import 'data/entry_repository.dart';
 import 'presentation/home/home_screen.dart';
@@ -41,10 +42,22 @@ class DebtLedgerApp extends StatelessWidget {
         themeMode: themeController.themeMode,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: HomeScreen(
-          repository: contactRepository,
-          entryRepository: entryRepository,
-          themeController: themeController,
+        // Cold launch shows the animated Daftar splash (the monogram draws on,
+        // then the دفتر · Daftar wordmark reveals), which routes to the home
+        // screen when it finishes. The Builder gives a context under the
+        // Navigator so the splash can replace itself with Home.
+        home: Builder(
+          builder: (context) => DaftarSplash(
+            onDone: () => Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => HomeScreen(
+                  repository: contactRepository,
+                  entryRepository: entryRepository,
+                  themeController: themeController,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

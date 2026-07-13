@@ -134,10 +134,12 @@ flutter_launcher_icons:
   image_path: "assets/branding/logo_icon.png"
   min_sdk_android: 21
   adaptive_icon_background: "#14746F"
-  adaptive_icon_foreground: "assets/branding/logo_adaptive_fg.png"
+  adaptive_icon_foreground: "assets/branding/logo_foreground.png"
 
-# Native splash: Teal field, white fused D/د mark over the wordmark. Baked at
-# build time (does not follow the accent). Regenerate with:
+# Native splash: Teal field, white dāl/open-D monogram over the دفتر · Daftar
+# wordmark. Baked at build time (does not follow the accent). The animated
+# DaftarSplash (lib/branding/daftar_splash.dart) takes over once Flutter boots.
+# Regenerate with:
 #   dart run flutter_native_splash:create
 flutter_native_splash:
   color: "#14746F"

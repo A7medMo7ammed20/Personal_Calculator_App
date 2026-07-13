@@ -43,6 +43,13 @@ void main() {
       entryRepository: EntryRepository(appDb),
       themeController: controller,
     ));
+    // The animated DaftarSplash plays first (monogram draw-on + wordmark), then
+    // routes to the home screen after a short hold timer. pumpAndSettle won't
+    // fire that lone trailing timer on its own, so advance the clock past the
+    // animation and the hold before driving the home UI.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 3)); // finish the draw animation
+    await tester.pump(const Duration(seconds: 1)); // fire the hold timer → navigate
     await tester.pumpAndSettle();
 
     // Starts on the default Teal chrome.
