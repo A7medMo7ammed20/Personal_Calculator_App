@@ -1,4 +1,7 @@
-# Context — Personal Debt Ledger
+# Context — Daftar (دفتر)
+
+**Daftar** (Arabic: دفتر, "ledger/notebook") is the product name — a single wordmark
+that serves both scripts. "Personal Debt Ledger" remains the plain descriptor.
 
 A personal debt/IOU ledger for Android (Flutter). You track money owed **to you** and **by you**, organized per person, in Saudi Riyal (SAR) and Yemeni Riyal (YER), and export per-person PDF statements. Bilingual (Arabic / English), local-only (SQLite), light/dark themes.
 
@@ -23,7 +26,7 @@ Whether an Entry is owed **to me** or **by me**. Set per Entry (not per Contact)
 - Owed by me — I owe the Contact. (Arabic: عليَّ)
 
 ### Currency
-SAR or YER. Chosen per Entry. A single Contact may hold entries in both currencies, but each currency has its **own independent balance** — the two are never summed together. In the UI, currency is a **global lens**: a switch at the top of the home screen selects SAR or YER, and the entire app (people list, per-currency grand totals, each Contact's entries and balance) reflects only the selected currency. Switching the global lens refilters everything. The Contact page inherits this global selection rather than having its own tab.
+SAR or YER. Chosen per Entry. A single Contact may hold entries in both currencies, but each currency has its **own independent balance** — the two are never summed together. In the UI, currency is a **global lens**: swipeable **bottom tabs** (SAR / YER) with an animated active-tab indicator select the currency, and the entire app (people list, per-currency grand totals, each Contact's entries and balance) reflects only the selected currency. Switching the global lens refilters everything. The Contact page inherits this global selection rather than having its own tab.
 
 The home header shows two per-currency totals for the selected currency: **Total owed to you** and **Total you owe**.
 
