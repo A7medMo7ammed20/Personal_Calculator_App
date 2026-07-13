@@ -33,6 +33,15 @@ The home header shows two per-currency totals for the selected currency: **Total
 ### Statement
 A per-Contact, per-currency PDF export of a Contact's entries (date | description | owed-to-me | owed-by-me columns) with the closing balance. Language follows the app; Arabic renders RTL. Optional date-range filter (default: all time). Distinct from the quick **WhatsApp share** — a tap-to-WhatsApp deep link with a pre-filled balance message for informal nudges.
 
+### Running summary
+An on-screen, per-Contact, per-currency preview of the [[Statement]] up to a
+chosen Entry's date: the dated entries oldest→newest (tapped entry anchored at
+the bottom) with the two **gross** directional running totals (owed-to-me and
+owed-by-me) and the net closing [[Balance]]. Built by a pure series function
+reused by the [[Analysis graph]] (#8) and the PDF [[Statement]] (#10).
+
+- Arabic: الملخّص الجاري
+
 ### Profile
 The single local app owner (you). Name (required — appears as creditor on statements) + optional phone. No account, login, or email.
 

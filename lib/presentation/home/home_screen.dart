@@ -5,7 +5,6 @@ import '../../data/entry_repository.dart';
 import '../../domain/balance.dart';
 import '../../domain/contact.dart';
 import '../../domain/currency.dart';
-import '../../domain/entry.dart';
 import '../../domain/ledger_totals.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../contacts/add_contact_screen.dart';
