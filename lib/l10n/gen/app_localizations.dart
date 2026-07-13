@@ -211,6 +211,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settled'**
   String get balanceSettled;
+
+  /// Home header label for the per-currency total owed to the user.
+  ///
+  /// In en, this message translates to:
+  /// **'Owed to you'**
+  String get homeTotalOwedToMe;
+
+  /// Home header label for the per-currency total the user owes.
+  ///
+  /// In en, this message translates to:
+  /// **'You owe'**
+  String get homeTotalOwedByMe;
 }
 
 class _AppLocalizationsDelegate

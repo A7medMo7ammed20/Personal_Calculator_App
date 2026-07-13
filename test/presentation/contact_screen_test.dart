@@ -53,7 +53,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_wrap(
       const Locale('en'),
-      ContactScreen(contact: contact, repository: entries),
+      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
     ));
     await tester.pumpAndSettle();
 
@@ -68,7 +68,7 @@ void main() {
 
     await tester.pumpWidget(_wrap(
       const Locale('en'),
-      ContactScreen(contact: contact, repository: entries),
+      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
     ));
     await tester.pumpAndSettle();
 
@@ -82,7 +82,7 @@ void main() {
 
     await tester.pumpWidget(_wrap(
       const Locale('en'),
-      ContactScreen(contact: contact, repository: entries),
+      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
     ));
     await tester.pumpAndSettle();
 
@@ -96,7 +96,7 @@ void main() {
 
     await tester.pumpWidget(_wrap(
       const Locale('ar'),
-      ContactScreen(contact: contact, repository: entries),
+      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
     ));
     await tester.pumpAndSettle();
 
@@ -113,7 +113,7 @@ void main() {
       (tester) async {
     await tester.pumpWidget(_wrap(
       const Locale('en'),
-      ContactScreen(contact: contact, repository: entries),
+      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
     ));
     await tester.pumpAndSettle();
 
@@ -133,7 +133,7 @@ void main() {
   testWidgets('saving with an empty amount is blocked', (tester) async {
     await tester.pumpWidget(_wrap(
       const Locale('en'),
-      ContactScreen(contact: contact, repository: entries),
+      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
     ));
     await tester.pumpAndSettle();
 

@@ -81,5 +81,13 @@
   "balanceSettled": "Settled",
   "@balanceSettled": {
     "description": "Balance label when nothing is outstanding in either direction."
+  },
+  "homeTotalOwedToMe": "Owed to you",
+  "@homeTotalOwedToMe": {
+    "description": "Home header label for the per-currency total owed to the user."
+  },
+  "homeTotalOwedByMe": "You owe",
+  "@homeTotalOwedByMe": {
+    "description": "Home header label for the per-currency total the user owes."
   }
 }

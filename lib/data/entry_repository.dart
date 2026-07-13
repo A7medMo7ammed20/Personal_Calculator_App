@@ -1,3 +1,4 @@
+import '../domain/balance.dart';
 import '../domain/currency.dart';
 import '../domain/entry.dart';
 import 'app_database.dart';
@@ -20,16 +21,38 @@ class EntryRepository {
     return entry.copyWith(id: id);
   }
 
-  /// A Contact's entries, newest first (by timestamp, then id).
-  Future<List<Entry>> listByContact(int contactId) async {
+  /// A Contact's entries, newest first (by timestamp, then id). Pass a
+  /// [currency] to scope to the active lens; omit it to return all currencies.
+  Future<List<Entry>> listByContact(int contactId, {Currency? currency}) async {
     final db = await _appDb.open();
     final rows = await db.query(
       table,
-      where: 'contact_id = ?',
-      whereArgs: [contactId],
+      where: currency == null ? 'contact_id = ?' : 'contact_id = ? AND currency = ?',
+      whereArgs: [contactId, if (currency != null) currency.code],
       orderBy: 'created_at DESC, id DESC',
     );
     return rows.map(_fromRow).toList();
+  }
+
+  /// Per-Contact net [Balance] within one [currency], keyed by contact id.
+  /// Contacts with no entries in [currency] are absent from the map. The two
+  /// currencies are queried independently and never summed (see CONTEXT.md).
+  Future<Map<int, Balance>> balancesByCurrency(Currency currency) async {
+    final db = await _appDb.open();
+    final rows = await db.rawQuery(
+      '''
+      SELECT contact_id,
+             SUM(CASE WHEN direction = ? THEN amount ELSE -amount END) AS signed
+      FROM $table
+      WHERE currency = ?
+      GROUP BY contact_id
+      ''',
+      [Direction.owedToMe.code, currency.code],
+    );
+    return {
+      for (final row in rows)
+        row['contact_id'] as int: Balance((row['signed'] as num).toDouble()),
+    };
   }
 
   Map<String, Object?> _toRow(Entry e) => {

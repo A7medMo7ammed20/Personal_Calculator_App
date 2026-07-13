@@ -68,4 +68,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get balanceSettled => 'Settled';
+
+  @override
+  String get homeTotalOwedToMe => 'Owed to you';
+
+  @override
+  String get homeTotalOwedByMe => 'You owe';
 }

@@ -68,4 +68,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get balanceSettled => 'مسدَّد';
+
+  @override
+  String get homeTotalOwedToMe => 'لك';
+
+  @override
+  String get homeTotalOwedByMe => 'عليك';
 }

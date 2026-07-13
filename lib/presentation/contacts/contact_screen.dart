@@ -8,6 +8,7 @@ import '../../domain/currency.dart';
 import '../../domain/entry.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../entries/add_entry_screen.dart';
+import '../money_format.dart';
 
 /// The heart of the ledger: one Contact's Entries plus a live per-Contact
 /// [Balance]. Repayment is just an opposite-direction Entry — nothing special
@@ -17,10 +18,15 @@ class ContactScreen extends StatefulWidget {
     super.key,
     required this.contact,
     required this.repository,
+    required this.currency,
   });
 
   final Contact contact;
   final EntryRepository repository;
+
+  /// The active currency lens; this page shows only this currency's entries and
+  /// balance, and new entries inherit it. See CONTEXT.md.
+  final Currency currency;
 
   @override
   State<ContactScreen> createState() => _ContactScreenState();
@@ -40,7 +46,10 @@ class _ContactScreenState extends State<ContactScreen> {
   }
 
   void _load() {
-    _entries = widget.repository.listByContact(widget.contact.id!);
+    _entries = widget.repository.listByContact(
+      widget.contact.id!,
+      currency: widget.currency,
+    );
   }
 
   Future<void> _addEntry() async {
@@ -49,17 +58,13 @@ class _ContactScreenState extends State<ContactScreen> {
         builder: (_) => AddEntryScreen(
           contactId: widget.contact.id!,
           repository: widget.repository,
+          currency: widget.currency,
         ),
       ),
     );
     if (saved != null && mounted) {
       setState(_load);
     }
-  }
-
-  String _formatAmount(double magnitude) {
-    final number = NumberFormat('#,##0.00').format(magnitude);
-    return '$number ${Currency.sar.symbol}';
   }
 
   @override
@@ -112,7 +117,7 @@ class _ContactScreenState extends State<ContactScreen> {
 
   String _balanceLabel(AppLocalizations l10n, Balance balance) {
     if (balance.isSettled) return l10n.balanceSettled;
-    final amount = _formatAmount(balance.magnitude);
+    final amount = formatMoney(balance.magnitude, widget.currency);
     return balance.isOwedToMe
         ? l10n.balanceOwedToMe(amount)
         : l10n.balanceOwedByMe(amount);
@@ -144,7 +149,7 @@ class _ContactScreenState extends State<ContactScreen> {
       ),
       subtitle: Text(date),
       trailing: Text(
-        '$sign${_formatAmount(entry.amount)}',
+        '$sign${formatMoney(entry.amount, entry.currency)}',
         style: Theme.of(context)
             .textTheme
             .titleMedium
