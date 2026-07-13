@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Flow;
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../../branding/daftar_mark.dart';
 import '../../data/contact_repository.dart';
@@ -18,7 +19,6 @@ import '../money_format.dart';
 import '../settings/settings_screen.dart';
 import '../theme/theme_context.dart';
 import '../theme/theme_controller.dart';
-import '../widgets/item_actions_overlay.dart';
 
 /// Global destinations behind the home overflow menu (⋮). The Analysis graph
 /// (#8) and Settings live here; Backup joins when it ships (ADR 0003/0004).
@@ -186,24 +186,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // Body horizontal-swipe → currency lens change. We accumulate the drag delta
-  // and decide on release, so a plain drag (no fling velocity) still switches.
-  // The list scrolls vertically, so a horizontal pan is free to mean "change
-  // currency" without fighting the scroll or a row long-press (ADR 0003).
-  double _swipeDx = 0;
-
-  void _onSwipeEnd(BuildContext context) {
-    const threshold = 48.0; // ignore incidental horizontal jitter
-    if (_swipeDx.abs() < threshold) return;
-    // In RTL the visual "next" tab sits to the left, so the sign inverts.
-    final rtl = Directionality.of(context) == TextDirection.rtl;
-    final forward = rtl ? _swipeDx > 0 : _swipeDx < 0;
-    final index = Currency.values.indexOf(_currency);
-    final next = index + (forward ? 1 : -1);
-    if (next < 0 || next >= Currency.values.length) return;
-    _selectCurrency(Currency.values[next]);
-  }
-
   void _onMenuAction(_HomeMenuAction action, AppLocalizations l10n) {
     switch (action) {
       case _HomeMenuAction.analysis:
@@ -211,8 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case _HomeMenuAction.settings:
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) =>
-                SettingsScreen(controller: widget.themeController!),
+            builder: (_) => SettingsScreen(controller: widget.themeController!),
           ),
         );
     }
@@ -310,80 +291,74 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ],
       ),
-      // Horizontal swipe anywhere on the body flips the currency lens; the
-      // ListView owns vertical drags, so the two never collide (ADR 0003).
-      body: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragStart: (_) => _swipeDx = 0,
-        onHorizontalDragUpdate: (d) => _swipeDx += d.primaryDelta ?? 0,
-        onHorizontalDragEnd: (_) => _onSwipeEnd(context),
-        child: FutureBuilder<_HomeData>(
-          future: _data,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final data = snapshot.data;
-            if (data == null || data.contacts.isEmpty) {
-              return Center(
-                child: Text(
-                  l10n.homeEmpty,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              );
-            }
-            // Period is a visibility filter (applied first), then search,
-            // then sort. A null activeIds means All time (no filtering).
-            final inPeriod = data.activeIds == null
-                ? data.contacts
-                : data.contacts
+      body: FutureBuilder<_HomeData>(
+        future: _data,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final data = snapshot.data;
+          if (data == null || data.contacts.isEmpty) {
+            return Center(
+              child: Text(
+                l10n.homeEmpty,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            );
+          }
+          // Period is a visibility filter (applied first), then search,
+          // then sort. A null activeIds means All time (no filtering).
+          final inPeriod = data.activeIds == null
+              ? data.contacts
+              : data.contacts
                     .where((c) => data.activeIds!.contains(c.id))
                     .toList();
-            final visible = sortContacts(
-              filterContacts(inPeriod, _query),
-              _sortField,
-              balances: data.balances,
-              activity: data.activity,
-              ascending: _ascending,
-            );
-            // No contacts survive the period → empty-period; otherwise it
-            // was the search box that cleared them → no-matches.
-            final emptyMessage = inPeriod.isEmpty
-                ? l10n.homeNoActivityInPeriod
-                : l10n.homeNoMatches;
-            return Column(
-              children: [
-                // One summary card: the all-time net position, or gross Flow
-                // (lent/received) when a period is bounded. Flow follows the
-                // period alone — search never changes it.
-                _SummaryCard(
-                  currency: _currency,
-                  totals: data.totals,
-                  flow: data.flow,
-                ),
-                _HomeToolbar(
-                  period: _period,
-                  onPeriodSelected: _selectPeriod,
-                  searchController: _searchController,
-                  sortField: _sortField,
-                  ascending: _ascending,
-                  onQueryChanged: (q) => setState(() => _query = q),
-                  onSortSelected: _selectSort,
-                ),
-                Expanded(
-                  child: visible.isEmpty
-                      ? Center(
-                          child: Text(
-                            emptyMessage,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        )
-                      : ListView.builder(
+          final visible = sortContacts(
+            filterContacts(inPeriod, _query),
+            _sortField,
+            balances: data.balances,
+            activity: data.activity,
+            ascending: _ascending,
+          );
+          // No contacts survive the period → empty-period; otherwise it
+          // was the search box that cleared them → no-matches.
+          final emptyMessage = inPeriod.isEmpty
+              ? l10n.homeNoActivityInPeriod
+              : l10n.homeNoMatches;
+          return Column(
+            children: [
+              // One summary card: the all-time net position, or gross Flow
+              // (lent/received) when a period is bounded. Flow follows the
+              // period alone — search never changes it.
+              _SummaryCard(
+                currency: _currency,
+                totals: data.totals,
+                flow: data.flow,
+              ),
+              _HomeToolbar(
+                period: _period,
+                onPeriodSelected: _selectPeriod,
+                searchController: _searchController,
+                sortField: _sortField,
+                ascending: _ascending,
+                onQueryChanged: (q) => setState(() => _query = q),
+                onSortSelected: _selectSort,
+              ),
+              Expanded(
+                child: visible.isEmpty
+                    ? Center(
+                        child: Text(
+                          emptyMessage,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      )
+                    : SlidableAutoCloseBehavior(
+                        child: ListView.builder(
                           itemCount: visible.length,
                           itemBuilder: (context, index) {
                             final contact = visible[index];
-                            final balance = data.balances[contact.id] ??
-                                const Balance(0);
+                            final balance =
+                                data.balances[contact.id] ?? const Balance(0);
                             return _contactTile(
                               context,
                               l10n,
@@ -392,62 +367,24 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           },
                         ),
-                ),
-              ],
-            );
-          },
-        ),
+                      ),
+              ),
+            ],
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addContact,
         tooltip: l10n.addContact,
         child: const Icon(Icons.person_add),
       ),
-      // The currency lens is the whole bottom bar: a swipeable SAR/YER tab bar
-      // with an animated active indicator (ADR 0003).
+      // The currency lens is the whole bottom bar: a tap-only SAR/YER pill bar
+      // with an animated indicator that slides to the active currency
+      // (ADR 0003, amended by ADR 0005 — horizontal swipe now belongs to rows).
       bottomNavigationBar: _CurrencyLens(
         selected: _currency,
         onSelected: _selectCurrency,
       ),
-    );
-  }
-
-  /// Long-press a contact tile → floating Edit/Delete buttons beside it (#5).
-  /// [tileContext] is the tile's own element, so its RenderBox gives the anchor
-  /// rect. Delete keeps the cascade-count confirm dialog then the undo SnackBar.
-  void _showContactActions(
-    BuildContext tileContext,
-    AppLocalizations l10n,
-    Contact contact,
-    Balance balance,
-  ) {
-    final box = tileContext.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
-    final rect = box.localToGlobal(Offset.zero) & box.size;
-
-    showItemActionsOverlay(
-      tileContext,
-      anchor: rect,
-      anchorPreview: SizedBox.fromSize(
-        size: rect.size,
-        child: Material(
-          color: Theme.of(tileContext).colorScheme.surface,
-          child: _contactTile(tileContext, l10n, contact, balance),
-        ),
-      ),
-      actions: [
-        ItemAction(
-          icon: Icons.edit,
-          label: l10n.edit,
-          onSelected: () => _editContact(contact),
-        ),
-        ItemAction(
-          icon: Icons.delete,
-          color: Theme.of(tileContext).colorScheme.error,
-          label: l10n.delete,
-          onSelected: () => _deleteContactWithConfirm(l10n, contact),
-        ),
-      ],
     );
   }
 
@@ -549,13 +486,34 @@ class _HomeScreenState extends State<HomeScreen> {
           : l10n.balanceOwedByMe(amount);
       color = balance.isOwedToMe ? semantics.owedToMe : semantics.owedByMe;
     }
-    // Builder so the long-press callback gets a context whose RenderObject is
-    // this tile (not the enclosing list), giving the overlay its anchor rect.
-    return Builder(
-      // Single-line row: avatar · name · coloured signed balance. The phone is
-      // deliberately not shown in-app — it lives only in PDF/WhatsApp share
-      // (design-system.md · Density). It remains searchable via filterContacts.
-      builder: (tileContext) => ListTile(
+    // Swipe the row to reveal Edit / Delete beside it (ADR 0005). The pane is
+    // declared with end semantics so it mirrors correctly under RTL and LTR.
+    // Single-line row: avatar · name · coloured signed balance. The phone is
+    // deliberately not shown in-app — it lives only in PDF/WhatsApp share
+    // (design-system.md · Density). It remains searchable via filterContacts.
+    return Slidable(
+      key: ValueKey('contact-${contact.id}'),
+      endActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        extentRatio: 0.5,
+        children: [
+          SlidableAction(
+            onPressed: (_) => _editContact(contact),
+            icon: Icons.edit,
+            label: l10n.edit,
+            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+            foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+          ),
+          SlidableAction(
+            onPressed: (_) => _deleteContactWithConfirm(l10n, contact),
+            icon: Icons.delete,
+            label: l10n.delete,
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
+            foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
+          ),
+        ],
+      ),
+      child: ListTile(
         leading: CircleAvatar(child: Text(_initial(contact.name))),
         title: Text(
           contact.name,
@@ -570,8 +528,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         onTap: () => _openContact(contact),
-        onLongPress: () =>
-            _showContactActions(tileContext, l10n, contact, balance),
       ),
     );
   }
@@ -693,33 +649,133 @@ class _HomeToolbar extends StatelessWidget {
   }
 }
 
-/// The currency lens as a swipeable bottom tab bar (ADR 0003): SAR / YER with
-/// Material 3's animated active-tab indicator. Selecting a tab — or swiping the
-/// body — switches the global lens; the two currencies never mix.
+/// The currency lens as a tap-only, floating pill bar (ADR 0003, amended by
+/// ADR 0005): SAR / YER with an accent-tinted indicator that *slides* to the
+/// active currency. Tapping a tab switches the global lens; the two currencies
+/// never mix. Body-swipe no longer switches currency — that gesture belongs to
+/// row actions now.
 class _CurrencyLens extends StatelessWidget {
   const _CurrencyLens({required this.selected, required this.onSelected});
+
+  static const double _tabHeight = 44;
+  static const Duration _slide = Duration(milliseconds: 250);
 
   final Currency selected;
   final ValueChanged<Currency> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final primary = Theme.of(context).colorScheme.primary;
-    return NavigationBar(
-      selectedIndex: Currency.values.indexOf(selected),
-      onDestinationSelected: (i) => onSelected(Currency.values[i]),
-      destinations: [
-        for (final currency in Currency.values)
-          NavigationDestination(
-            icon: Text(currency.symbol, style: textTheme.titleMedium),
-            selectedIcon: Text(
-              currency.symbol,
-              style: textTheme.titleMedium?.copyWith(color: primary),
+    final scheme = Theme.of(context).colorScheme;
+    final spacing = context.spacing;
+    final currencies = Currency.values;
+    final count = currencies.length;
+    final index = currencies.indexOf(selected);
+    // AlignmentDirectional.x runs start(-1)→end(1); it mirrors under RTL, so
+    // the pill lands on the same tab the Row lays the active currency out on.
+    final alignX = count == 1 ? 0.0 : (index / (count - 1)) * 2 - 1;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(spacing.lg, 0, spacing.lg, spacing.sm),
+        child: Material(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(context.radius.pill),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            // Bound the Stack's height: the AnimatedAlign below has no size
+            // factor, so an unbounded Stack lets it fill the bottom-bar's
+            // loose height and balloon over the body list. Pin it to a tab.
+            child: SizedBox(
+              height: _tabHeight,
+              child: Stack(
+                children: [
+                  // The sliding accent pill sits behind the active currency.
+                  AnimatedAlign(
+                    duration: _slide,
+                    curve: Curves.easeOutCubic,
+                    alignment: AlignmentDirectional(alignX, 0),
+                    child: FractionallySizedBox(
+                      widthFactor: 1 / count,
+                      child: Container(
+                        height: _tabHeight,
+                        decoration: BoxDecoration(
+                          color: scheme.primary,
+                          borderRadius: BorderRadius.circular(
+                            context.radius.pill,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      for (final currency in currencies)
+                        Expanded(
+                          child: _CurrencyTab(
+                            currency: currency,
+                            selected: currency == selected,
+                            onTap: () => onSelected(currency),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            label: currency.code,
           ),
-      ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One tab of the [_CurrencyLens]: symbol + code, its colour animating between
+/// the on-primary (over the accent pill) and on-surface-variant (idle) tints.
+class _CurrencyTab extends StatelessWidget {
+  const _CurrencyTab({
+    required this.currency,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Currency currency;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final color = selected ? scheme.onPrimary : scheme.onSurfaceVariant;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: currency.code,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(context.radius.pill),
+        child: SizedBox(
+          height: _CurrencyLens._tabHeight,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                currency.symbol,
+                style: textTheme.titleMedium?.copyWith(color: color),
+              ),
+              SizedBox(width: context.spacing.xs),
+              AnimatedDefaultTextStyle(
+                duration: _CurrencyLens._slide,
+                style: textTheme.labelLarge!.copyWith(
+                  color: color,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+                child: Text(currency.code),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -728,11 +784,7 @@ class _CurrencyLens extends StatelessWidget {
 /// currency's all-time net position (Owed to you / You owe), or gross [[Flow]]
 /// (Lent / Received) when a period is bounded.
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
-    required this.currency,
-    required this.totals,
-    this.flow,
-  });
+  const _SummaryCard({required this.currency, required this.totals, this.flow});
 
   final Currency currency;
   final LedgerTotals totals;

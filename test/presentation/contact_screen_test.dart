@@ -7,6 +7,7 @@ import 'package:debt_ledger/domain/entry.dart';
 import 'package:debt_ledger/l10n/gen/app_localizations.dart';
 import 'package:debt_ledger/presentation/contacts/contact_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
@@ -37,11 +38,7 @@ void main() {
 
   tearDown(() => appDb.close());
 
-  Entry seed(
-    int contactId,
-    Direction direction,
-    double amount,
-  ) => Entry(
+  Entry seed(int contactId, Direction direction, double amount) => Entry(
     contactId: contactId,
     amount: amount,
     direction: direction,
@@ -49,12 +46,19 @@ void main() {
     createdAt: DateTime(2026, 7, 13, 12),
   );
 
-  testWidgets('shows the empty state when the contact has no entries',
-      (tester) async {
-    await tester.pumpWidget(_wrap(
-      const Locale('en'),
-      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
-    ));
+  testWidgets('shows the empty state when the contact has no entries', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        const Locale('en'),
+        ContactScreen(
+          contact: contact,
+          repository: entries,
+          currency: Currency.sar,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Khaled'), findsWidgets);
@@ -62,14 +66,21 @@ void main() {
     expect(find.text('Settled'), findsOneWidget);
   });
 
-  testWidgets('shows a green owes-you balance for an owed-to-me entry',
-      (tester) async {
+  testWidgets('shows a green owes-you balance for an owed-to-me entry', (
+    tester,
+  ) async {
     await entries.add(seed(contact.id!, Direction.owedToMe, 150));
 
-    await tester.pumpWidget(_wrap(
-      const Locale('en'),
-      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
-    ));
+    await tester.pumpWidget(
+      _wrap(
+        const Locale('en'),
+        ContactScreen(
+          contact: contact,
+          repository: entries,
+          currency: Currency.sar,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.textContaining('owes you'), findsOneWidget);
@@ -80,10 +91,16 @@ void main() {
     await entries.add(seed(contact.id!, Direction.owedToMe, 100));
     await entries.add(seed(contact.id!, Direction.owedByMe, 40));
 
-    await tester.pumpWidget(_wrap(
-      const Locale('en'),
-      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
-    ));
+    await tester.pumpWidget(
+      _wrap(
+        const Locale('en'),
+        ContactScreen(
+          contact: contact,
+          repository: entries,
+          currency: Currency.sar,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     // Net is 60 owed-to-me, not 100.
@@ -94,10 +111,16 @@ void main() {
   testWidgets('renders the Arabic owed-by-me balance (RTL)', (tester) async {
     await entries.add(seed(contact.id!, Direction.owedByMe, 80));
 
-    await tester.pumpWidget(_wrap(
-      const Locale('ar'),
-      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
-    ));
+    await tester.pumpWidget(
+      _wrap(
+        const Locale('ar'),
+        ContactScreen(
+          contact: contact,
+          repository: entries,
+          currency: Currency.sar,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     // The balance header carries the amount; "عليك" alone also appears as the
@@ -109,12 +132,19 @@ void main() {
     );
   });
 
-  testWidgets('adding an entry through the form updates the balance',
-      (tester) async {
-    await tester.pumpWidget(_wrap(
-      const Locale('en'),
-      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
-    ));
+  testWidgets('adding an entry through the form updates the balance', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        const Locale('en'),
+        ContactScreen(
+          contact: contact,
+          repository: entries,
+          currency: Currency.sar,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.add));
@@ -131,10 +161,16 @@ void main() {
   });
 
   testWidgets('saving with an empty amount is blocked', (tester) async {
-    await tester.pumpWidget(_wrap(
-      const Locale('en'),
-      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
-    ));
+    await tester.pumpWidget(
+      _wrap(
+        const Locale('en'),
+        ContactScreen(
+          contact: contact,
+          repository: entries,
+          currency: Currency.sar,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.add));
@@ -147,20 +183,40 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Save'), findsOneWidget);
   });
 
-  testWidgets('searching filters the entry list by description', (tester) async {
-    await entries.add(Entry(
-      contactId: contact.id!, amount: 10, direction: Direction.owedToMe,
-      currency: Currency.sar, createdAt: DateTime(2026, 7, 1), description: 'Lunch',
-    ));
-    await entries.add(Entry(
-      contactId: contact.id!, amount: 20, direction: Direction.owedToMe,
-      currency: Currency.sar, createdAt: DateTime(2026, 7, 2), description: 'Taxi',
-    ));
+  testWidgets('searching filters the entry list by description', (
+    tester,
+  ) async {
+    await entries.add(
+      Entry(
+        contactId: contact.id!,
+        amount: 10,
+        direction: Direction.owedToMe,
+        currency: Currency.sar,
+        createdAt: DateTime(2026, 7, 1),
+        description: 'Lunch',
+      ),
+    );
+    await entries.add(
+      Entry(
+        contactId: contact.id!,
+        amount: 20,
+        direction: Direction.owedToMe,
+        currency: Currency.sar,
+        createdAt: DateTime(2026, 7, 2),
+        description: 'Taxi',
+      ),
+    );
 
-    await tester.pumpWidget(_wrap(
-      const Locale('en'),
-      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
-    ));
+    await tester.pumpWidget(
+      _wrap(
+        const Locale('en'),
+        ContactScreen(
+          contact: contact,
+          repository: entries,
+          currency: Currency.sar,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Lunch'), findsOneWidget);
@@ -173,43 +229,56 @@ void main() {
     expect(find.text('Taxi'), findsNothing);
   });
 
-  testWidgets('long-press reveals delete which confirms then removes',
-      (tester) async {
+  testWidgets('swipe-to-reveal delete removes the entry immediately with undo', (
+    tester,
+  ) async {
     await entries.add(seed(contact.id!, Direction.owedToMe, 150));
 
-    await tester.pumpWidget(_wrap(
-      const Locale('en'),
-      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
-    ));
+    await tester.pumpWidget(
+      _wrap(
+        const Locale('en'),
+        ContactScreen(
+          contact: contact,
+          repository: entries,
+          currency: Currency.sar,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
-    // Long-press the entry row → floating Edit/Delete buttons appear.
-    await tester.longPress(find.byType(ListTile).first);
+    // Swipe the entry row (LTR: toward the start) → Edit/Delete appear beside it
+    // (ADR 0005).
+    await tester.drag(find.byType(Slidable).first, const Offset(-500, 0));
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.edit), findsOneWidget);
     expect(find.byIcon(Icons.delete), findsOneWidget);
 
-    // Delete asks for confirmation.
+    // Entry delete is immediate — no confirm dialog (only Contact delete confirms).
     await tester.tap(find.byIcon(Icons.delete));
     await tester.pumpAndSettle();
-    expect(find.text('Delete entry?'), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(TextButton, 'Delete'));
-    await tester.pumpAndSettle();
+    expect(find.text('Delete entry?'), findsNothing);
 
     // Balance falls back to settled; an undo SnackBar appears.
     expect(find.text('Settled'), findsOneWidget);
     expect(find.text('Undo'), findsOneWidget);
   });
 
-  testWidgets('tapping an entry opens the running summary sheet', (tester) async {
+  testWidgets('tapping an entry opens the running summary sheet', (
+    tester,
+  ) async {
     await entries.add(seed(contact.id!, Direction.owedToMe, 120));
 
-    await tester.pumpWidget(_wrap(
-      const Locale('en'),
-      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
-    ));
+    await tester.pumpWidget(
+      _wrap(
+        const Locale('en'),
+        ContactScreen(
+          contact: contact,
+          repository: entries,
+          currency: Currency.sar,
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(ListTile).first);

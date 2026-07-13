@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 
 import '../../data/entry_repository.dart';
@@ -11,7 +12,6 @@ import '../../l10n/gen/app_localizations.dart';
 import '../entries/add_entry_screen.dart';
 import '../money_format.dart';
 import '../theme/theme_context.dart';
-import '../widgets/item_actions_overlay.dart';
 import 'running_summary_sheet.dart';
 
 /// The heart of the ledger: one Contact's Entries plus a live per-Contact
@@ -125,11 +125,17 @@ class _ContactScreenState extends State<ContactScreen> {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                       )
-                    : ListView.separated(
-                        itemCount: visible.length,
-                        separatorBuilder: (_, _) => const Divider(height: 1),
-                        itemBuilder: (context, index) =>
-                            _entryTile(context, l10n, entries, visible[index]),
+                    : SlidableAutoCloseBehavior(
+                        child: ListView.separated(
+                          itemCount: visible.length,
+                          separatorBuilder: (_, _) => const Divider(height: 1),
+                          itemBuilder: (context, index) => _entryTile(
+                            context,
+                            l10n,
+                            entries,
+                            visible[index],
+                          ),
+                        ),
                       ),
               ),
             ],
@@ -157,74 +163,6 @@ class _ContactScreenState extends State<ContactScreen> {
     final semantics = context.semanticColors;
     if (balance.isSettled) return semantics.settled;
     return balance.isOwedToMe ? semantics.owedToMe : semantics.owedByMe;
-  }
-
-  /// Long-press an entry row → floating Edit/Delete buttons beside it (#5).
-  /// [tileContext] is the tile's own element, so its RenderBox gives the anchor
-  /// rect the overlay draws around. Edit and Delete reuse the same handlers the
-  /// swipe path once used; Delete keeps the confirm-then-undo flow.
-  void _showEntryActions(
-    BuildContext tileContext,
-    AppLocalizations l10n,
-    List<Entry> allEntries,
-    Entry entry,
-  ) {
-    final box = tileContext.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) return;
-    final rect = box.localToGlobal(Offset.zero) & box.size;
-
-    showItemActionsOverlay(
-      tileContext,
-      anchor: rect,
-      anchorPreview: SizedBox.fromSize(
-        size: rect.size,
-        child: Material(
-          color: Theme.of(tileContext).colorScheme.surface,
-          child: _entryTile(tileContext, l10n, allEntries, entry),
-        ),
-      ),
-      actions: [
-        ItemAction(
-          icon: Icons.edit,
-          label: l10n.edit,
-          onSelected: () => _editEntry(entry),
-        ),
-        ItemAction(
-          icon: Icons.delete,
-          color: Theme.of(tileContext).colorScheme.error,
-          label: l10n.delete,
-          onSelected: () => _deleteEntryWithConfirm(l10n, entry),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _deleteEntryWithConfirm(
-    AppLocalizations l10n,
-    Entry entry,
-  ) async {
-    if (await _confirmDeleteEntry(l10n)) await _deleteEntry(entry);
-  }
-
-  Future<bool> _confirmDeleteEntry(AppLocalizations l10n) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.deleteEntryTitle),
-        content: Text(l10n.deleteEntryMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(l10n.delete),
-          ),
-        ],
-      ),
-    );
-    return confirmed ?? false;
   }
 
   Future<void> _deleteEntry(Entry entry) async {
@@ -270,24 +208,46 @@ class _ContactScreenState extends State<ContactScreen> {
     Entry entry,
   ) {
     final toMe = entry.direction == Direction.owedToMe;
-    final color = toMe ? context.semanticColors.owedToMe : context.semanticColors.owedByMe;
+    final color = toMe
+        ? context.semanticColors.owedToMe
+        : context.semanticColors.owedByMe;
     final date = DateFormat.yMMMd(
       Localizations.localeOf(context).toString(),
     ).add_jm().format(entry.createdAt);
     final sign = toMe ? '+' : '−';
 
-    // Builder so the long-press callback gets a context whose RenderObject is
-    // this tile (not the enclosing sliver), giving the overlay its anchor rect.
-    return Builder(
-      builder: (tileContext) => ListTile(
+    // Swipe the row to reveal Edit / Delete beside it (ADR 0005); end semantics
+    // mirror the pane under RTL/LTR. Tapping the row still opens the running
+    // summary. Entry delete is immediate + undoable — no confirm dialog.
+    return Slidable(
+      key: ValueKey('entry-${entry.id}'),
+      endActionPane: ActionPane(
+        motion: const DrawerMotion(),
+        extentRatio: 0.5,
+        children: [
+          SlidableAction(
+            onPressed: (_) => _editEntry(entry),
+            icon: Icons.edit,
+            label: l10n.edit,
+            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+            foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+          ),
+          SlidableAction(
+            onPressed: (_) => _deleteEntry(entry),
+            icon: Icons.delete,
+            label: l10n.delete,
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
+            foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
+          ),
+        ],
+      ),
+      child: ListTile(
         onTap: () => showRunningSummarySheet(
           context,
           entries: allEntries,
           tapped: entry,
           currency: widget.currency,
         ),
-        onLongPress: () =>
-            _showEntryActions(tileContext, l10n, allEntries, entry),
         leading: CircleAvatar(
           backgroundColor: color.withValues(alpha: 0.15),
           foregroundColor: color,

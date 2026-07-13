@@ -45,23 +45,21 @@ void main() {
     createdAt: DateTime(2026, 7, 13, 12),
   );
 
-  HomeScreen home() => HomeScreen(
-    repository: contacts,
-    entryRepository: entries,
-  );
+  HomeScreen home() =>
+      HomeScreen(repository: contacts, entryRepository: entries);
 
   testWidgets('home shows the currency lens with SAR and YER', (tester) async {
     await tester.pumpWidget(_wrap(const Locale('en'), home()));
     await tester.pumpAndSettle();
 
-    // The lens is now the bottom tab bar (ADR 0003), still labelled SAR / YER.
+    // The lens is now a tap-only pill bar (ADR 0005), still labelled SAR / YER.
     expect(find.text('SAR'), findsOneWidget);
     expect(find.text('YER'), findsOneWidget);
-    expect(find.byType(NavigationBar), findsOneWidget);
   });
 
-  testWidgets('swiping the body horizontally changes the currency lens',
-      (tester) async {
+  testWidgets('body swipe no longer changes the currency lens (ADR 0005)', (
+    tester,
+  ) async {
     final khaled = await contacts.add(const Contact(name: 'Khaled'));
     await entries.add(entry(khaled.id!, Currency.sar, 100));
     await entries.add(entry(khaled.id!, Currency.yer, 300));
@@ -73,23 +71,21 @@ void main() {
     expect(find.textContaining('100.00'), findsWidgets);
     expect(find.textContaining('300.00'), findsNothing);
 
-    // Swipe left on the list → advance to the next lens (YER).
-    await tester.drag(find.byType(ListView), const Offset(-300, 0));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('300.00'), findsWidgets);
-    expect(find.textContaining('100.00'), findsNothing);
-
-    // Swipe right → back to SAR.
-    await tester.drag(find.byType(ListView), const Offset(300, 0));
+    // Horizontal drag on a row is a swipe-to-reveal gesture now, not a lens
+    // switch — the currency must stay on SAR.
+    await tester.drag(
+      find.textContaining('100.00').first,
+      const Offset(-300, 0),
+    );
     await tester.pumpAndSettle();
 
     expect(find.textContaining('100.00'), findsWidgets);
     expect(find.textContaining('300.00'), findsNothing);
   });
 
-  testWidgets('switching the lens refilters totals and per-contact balances',
-      (tester) async {
+  testWidgets('switching the lens refilters totals and per-contact balances', (
+    tester,
+  ) async {
     final khaled = await contacts.add(const Contact(name: 'Khaled'));
     await entries.add(entry(khaled.id!, Currency.sar, 100));
     await entries.add(entry(khaled.id!, Currency.yer, 300));
@@ -110,8 +106,9 @@ void main() {
     expect(find.textContaining('400'), findsNothing);
   });
 
-  testWidgets('a contact with no entries in the lens reads as settled',
-      (tester) async {
+  testWidgets('a contact with no entries in the lens reads as settled', (
+    tester,
+  ) async {
     final yerOnly = await contacts.add(const Contact(name: 'YerOnly'));
     await entries.add(entry(yerOnly.id!, Currency.yer, 300));
 
@@ -123,8 +120,9 @@ void main() {
     expect(find.text('Settled'), findsWidgets);
   });
 
-  testWidgets('a new entry inherits the active lens currency (no picker)',
-      (tester) async {
+  testWidgets('a new entry inherits the active lens currency (no picker)', (
+    tester,
+  ) async {
     final c = await contacts.add(const Contact(name: 'Nora'));
 
     await tester.pumpWidget(_wrap(const Locale('en'), home()));

@@ -30,7 +30,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get save => 'حفظ';
 
   @override
-  String get addEntry => 'إضافة حركة';
+  String get addEntry => 'إضافة معاملة';
 
   @override
   String get entryAmount => 'المبلغ';
@@ -54,7 +54,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get entryDateTime => 'التاريخ والوقت';
 
   @override
-  String get contactEntriesEmpty => 'لا توجد حركات بعد';
+  String get contactEntriesEmpty => 'لا توجد معاملات بعد';
 
   @override
   String balanceOwedToMe(String amount) {
@@ -88,19 +88,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get undo => 'تراجع';
 
   @override
-  String get editEntry => 'تعديل الحركة';
+  String get editEntry => 'تعديل المعاملة';
 
   @override
   String get editContact => 'تعديل جهة الاتصال';
 
   @override
-  String get deleteEntryTitle => 'حذف الحركة؟';
+  String get deleteEntryTitle => 'حذف المعاملة؟';
 
   @override
-  String get deleteEntryMessage => 'ستُحذف هذه الحركة وسيُعاد حساب الرصيد.';
+  String get deleteEntryMessage => 'ستُحذف هذه المعاملة وسيُعاد حساب الرصيد.';
 
   @override
-  String get entryDeleted => 'تم حذف الحركة';
+  String get entryDeleted => 'تم حذف المعاملة';
 
   @override
   String get deleteContactTitle => 'حذف جهة الاتصال؟';
@@ -110,12 +110,12 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'ستُحذف $count حركة أيضًا.',
-      many: 'ستُحذف $count حركة أيضًا.',
-      few: 'ستُحذف $count حركات أيضًا.',
-      two: 'ستُحذف حركتان أيضًا.',
-      one: 'ستُحذف حركة واحدة أيضًا.',
-      zero: 'لا توجد حركات لهذه الجهة.',
+      other: 'ستُحذف $count معاملة أيضًا.',
+      many: 'ستُحذف $count معاملة أيضًا.',
+      few: 'ستُحذف $count معاملات أيضًا.',
+      two: 'ستُحذف معاملتان أيضًا.',
+      one: 'ستُحذف معاملة واحدة أيضًا.',
+      zero: 'لا توجد معاملات لهذه الجهة.',
     );
     return '$_temp0';
   }
@@ -229,5 +229,5 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get breakdownEmpty => 'لا حركات في هذه الفترة';
+  String get breakdownEmpty => 'لا معاملات في هذه الفترة';
 }
