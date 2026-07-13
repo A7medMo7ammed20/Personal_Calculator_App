@@ -5,6 +5,7 @@ import '../../data/entry_repository.dart';
 import '../../domain/balance.dart';
 import '../../domain/contact.dart';
 import '../../domain/currency.dart';
+import '../../domain/entry.dart';
 import '../../domain/ledger_totals.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../contacts/add_contact_screen.dart';
@@ -126,7 +127,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           final contact = data.contacts[index];
                           final balance =
                               data.balances[contact.id] ?? const Balance(0);
-                          return _contactTile(context, l10n, contact, balance);
+                          return _dismissibleContact(
+                              context, l10n, contact, balance);
                         },
                       ),
                     ),
@@ -143,6 +145,102 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Icon(Icons.person_add),
       ),
     );
+  }
+
+  Widget _dismissibleContact(
+    BuildContext context,
+    AppLocalizations l10n,
+    Contact contact,
+    Balance balance,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    return Dismissible(
+      key: ValueKey('contact-${contact.id}'),
+      background: Container(
+        color: _red.withValues(alpha: 0.90),
+        alignment: AlignmentDirectional.centerStart,
+        padding: const EdgeInsetsDirectional.only(start: 20),
+        child: Icon(Icons.delete, color: scheme.onError),
+      ),
+      secondaryBackground: Container(
+        color: Colors.blue.withValues(alpha: 0.85),
+        alignment: AlignmentDirectional.centerEnd,
+        padding: const EdgeInsetsDirectional.only(end: 20),
+        child: const Icon(Icons.edit, color: Colors.white),
+      ),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          return _confirmDeleteContact(l10n, contact);
+        } else {
+          await _editContact(contact);
+          return false;
+        }
+      },
+      onDismissed: (_) => _deleteContact(contact),
+      child: _contactTile(context, l10n, contact, balance),
+    );
+  }
+
+  Future<bool> _confirmDeleteContact(AppLocalizations l10n, Contact contact) async {
+    final count = await widget.entryRepository
+        .listByContact(contact.id!)
+        .then((list) => list.length);
+    if (!mounted) return false;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.deleteContactTitle),
+        content: Text(l10n.deleteContactMessage(count)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
+  Future<void> _deleteContact(Contact contact) async {
+    // Capture the entries first so undo can restore the cascade.
+    final removedEntries =
+        await widget.entryRepository.listByContact(contact.id!);
+    await widget.repository.delete(contact.id!);
+    if (!mounted) return;
+    setState(_load);
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(l10n.contactDeleted),
+        action: SnackBarAction(
+          label: l10n.undo,
+          onPressed: () async {
+            final restored =
+                await widget.repository.add(contact.copyWith(id: null));
+            for (final e in removedEntries) {
+              await widget.entryRepository
+                  .add(e.copyWith(id: null, contactId: restored.id));
+            }
+            if (mounted) setState(_load);
+          },
+        ),
+      ));
+  }
+
+  Future<void> _editContact(Contact contact) async {
+    final updated = await Navigator.of(context).push<Contact>(
+      MaterialPageRoute(
+        builder: (_) =>
+            AddContactScreen(repository: widget.repository, existing: contact),
+      ),
+    );
+    if (updated != null && mounted) setState(_load);
   }
 
   Widget _contactTile(
