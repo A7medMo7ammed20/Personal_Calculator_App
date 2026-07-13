@@ -109,6 +109,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No contacts yet'**
   String get homeEmpty;
+
+  /// Title/label for the add-contact action and screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Add contact'**
+  String get addContact;
+
+  /// Label for the contact name field.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get contactName;
+
+  /// Label for the optional contact phone field.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone (optional)'**
+  String get contactPhone;
+
+  /// Validation message shown when the name field is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Name is required'**
+  String get nameRequired;
+
+  /// Label for the save button.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
 }
 
 class _AppLocalizationsDelegate

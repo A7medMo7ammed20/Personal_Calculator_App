@@ -7,5 +7,25 @@
   "homeEmpty": "No contacts yet",
   "@homeEmpty": {
     "description": "Placeholder shown on the home screen when there are no contacts."
+  },
+  "addContact": "Add contact",
+  "@addContact": {
+    "description": "Title/label for the add-contact action and screen."
+  },
+  "contactName": "Name",
+  "@contactName": {
+    "description": "Label for the contact name field."
+  },
+  "contactPhone": "Phone (optional)",
+  "@contactPhone": {
+    "description": "Label for the optional contact phone field."
+  },
+  "nameRequired": "Name is required",
+  "@nameRequired": {
+    "description": "Validation message shown when the name field is empty."
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Label for the save button."
   }
 }

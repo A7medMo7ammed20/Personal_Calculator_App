@@ -13,4 +13,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeEmpty => 'No contacts yet';
+
+  @override
+  String get addContact => 'Add contact';
+
+  @override
+  String get contactName => 'Name';
+
+  @override
+  String get contactPhone => 'Phone (optional)';
+
+  @override
+  String get nameRequired => 'Name is required';
+
+  @override
+  String get save => 'Save';
 }
