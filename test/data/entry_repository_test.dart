@@ -136,4 +136,30 @@ void main() {
     final remaining = await entries.listByContact(contact.id!);
     expect(remaining.map((e) => e.id), [keep.id]);
   });
+
+  Entry inCurrency(int contactId, Currency currency, DateTime when) => Entry(
+    contactId: contactId,
+    amount: 100,
+    direction: Direction.owedToMe,
+    currency: currency,
+    createdAt: when,
+  );
+
+  test('lastActivityByCurrency returns each contact newest entry in the lens',
+      () async {
+    final a = await contacts.add(const Contact(name: 'A'));
+    final b = await contacts.add(const Contact(name: 'B'));
+    await entries.add(inCurrency(a.id!, Currency.sar, DateTime(2026, 7, 1)));
+    await entries.add(inCurrency(a.id!, Currency.sar, DateTime(2026, 7, 10)));
+    await entries.add(inCurrency(a.id!, Currency.yer, DateTime(2026, 7, 12)));
+    await entries.add(inCurrency(b.id!, Currency.yer, DateTime(2026, 6, 1)));
+
+    expect(await entries.lastActivityByCurrency(Currency.sar), {
+      a.id!: DateTime(2026, 7, 10), // newest SAR only; B has no SAR entry
+    });
+    expect(await entries.lastActivityByCurrency(Currency.yer), {
+      a.id!: DateTime(2026, 7, 12),
+      b.id!: DateTime(2026, 6, 1),
+    });
+  });
 }

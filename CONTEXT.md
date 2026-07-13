@@ -56,6 +56,17 @@ A time-range selector (This month / Last month / This year / Custom / All time) 
 
 On the **home screen** it is a **visibility filter**, never a balance filter: it controls which Contacts appear (those with activity in range) and turns the grand-total header into a **flow** figure for the range (total lent / total received), while each Contact row still shows its **true, all-time outstanding Balance**. A Balance is cumulative and all-time by definition — it is never recomputed over a window (a windowed balance would falsely read 0 for an old, unpaid debt). Windowed math lives only in the analysis graph.
 
+### Activity
+A Contact's **most recent [[Entry]] date within the current currency lens** — the
+newest `created_at` among their entries in the selected [[Currency]]. Drives the
+home screen's default sort (most-recent-activity first). A Contact with no entry
+in the selected currency has **no activity** in that lens and sorts last (then by
+name). Lens-scoped, like everything else on home: the same Contact can be "active"
+under YER and inactive under SAR. The [[Period filter]]'s "activity in range" is
+this concept restricted to a time window.
+
+- Arabic: النشاط
+
 ### Analysis graph
 A per-currency (following the global currency lens) chart of the **cumulative net balance over time** — the running total position across all Contacts. Rising = net owed-to-me increasing; falling = repayments or new owed-by-me. X-axis range follows the [[period filter]]. Never mixes currencies into one line. **Drill-down:** tapping a point shows a **contact-level breakdown** of the entries in that interval (who drove the increase/decrease). Optional secondary flow-bars view is deferred.
 

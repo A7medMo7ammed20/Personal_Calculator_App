@@ -70,4 +70,40 @@ void main() {
     expect(find.text('Sami'), findsNothing);
     expect(await contacts.list(), isEmpty);
   });
+
+  testWidgets('search filters the contact list by name in real time',
+      (tester) async {
+    await contacts.add(const Contact(name: 'Ali'));
+    await contacts.add(const Contact(name: 'Sara'));
+
+    await tester.pumpWidget(_wrap(
+      HomeScreen(repository: contacts, entryRepository: entries),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ali'), findsOneWidget);
+    expect(find.text('Sara'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'ali');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ali'), findsOneWidget);
+    expect(find.text('Sara'), findsNothing);
+  });
+
+  testWidgets('search by digits matches a contact phone', (tester) async {
+    await contacts.add(const Contact(name: 'Ali', phone: '055 512 3456'));
+    await contacts.add(const Contact(name: 'Sara', phone: '050 999 0000'));
+
+    await tester.pumpWidget(_wrap(
+      HomeScreen(repository: contacts, entryRepository: entries),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), '0555123');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ali'), findsOneWidget);
+    expect(find.text('Sara'), findsNothing);
+  });
 }

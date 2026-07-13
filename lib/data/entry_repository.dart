@@ -73,6 +73,27 @@ class EntryRepository {
     };
   }
 
+  /// Each Contact's most recent Entry date within one [currency] (their
+  /// [[Activity]] in that lens), keyed by contact id. Contacts with no entry in
+  /// [currency] are absent. Drives the home screen's default sort (#6).
+  Future<Map<int, DateTime>> lastActivityByCurrency(Currency currency) async {
+    final db = await _appDb.open();
+    final rows = await db.rawQuery(
+      '''
+      SELECT contact_id, MAX(created_at) AS last_at
+      FROM $table
+      WHERE currency = ?
+      GROUP BY contact_id
+      ''',
+      [currency.code],
+    );
+    return {
+      for (final row in rows)
+        row['contact_id'] as int:
+            DateTime.fromMillisecondsSinceEpoch(row['last_at'] as int),
+    };
+  }
+
   Map<String, Object?> _toRow(Entry e) => {
     'contact_id': e.contactId,
     'amount': e.amount,

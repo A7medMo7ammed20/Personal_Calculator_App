@@ -38,5 +38,10 @@
   "sortByDate": "التاريخ",
   "sortByValue": "القيمة",
   "sortByDescription": "الوصف",
+  "searchContactsHint": "ابحث بالاسم أو الهاتف",
+  "homeNoMatches": "لا نتائج مطابقة",
+  "sortByActivity": "الأحدث",
+  "sortByName": "الاسم",
+  "sortByBalanceSize": "الرصيد",
   "summaryTitle": "الملخّص حتى {date}"
 }

@@ -326,6 +326,36 @@ abstract class AppLocalizations {
   /// **'Description'**
   String get sortByDescription;
 
+  /// Hint text in the home contact search field (#6).
+  ///
+  /// In en, this message translates to:
+  /// **'Search name or phone'**
+  String get searchContactsHint;
+
+  /// Shown on home when the search matches no contacts.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get homeNoMatches;
+
+  /// Sort contacts by most recent activity (default).
+  ///
+  /// In en, this message translates to:
+  /// **'Recent'**
+  String get sortByActivity;
+
+  /// Sort contacts by name.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get sortByName;
+
+  /// Sort contacts by balance magnitude.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get sortByBalanceSize;
+
   /// Title of the running-summary bottom sheet, showing the tapped entry's date.
   ///
   /// In en, this message translates to:
