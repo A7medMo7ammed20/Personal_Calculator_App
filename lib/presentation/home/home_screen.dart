@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Flow;
 
 import '../../data/contact_repository.dart';
 import '../../data/entry_repository.dart';
@@ -6,7 +6,9 @@ import '../../domain/balance.dart';
 import '../../domain/contact.dart';
 import '../../domain/contact_sort.dart';
 import '../../domain/currency.dart';
+import '../../domain/flow.dart';
 import '../../domain/ledger_totals.dart';
+import '../../domain/period.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../contacts/add_contact_screen.dart';
 import '../contacts/contact_screen.dart';
@@ -35,13 +37,26 @@ class HomeScreen extends StatefulWidget {
 }
 
 /// Everything the home screen renders for one currency lens, loaded together.
+/// [balances] and [activity] are always all-time — the [[Period filter]] never
+/// touches them. When a bounded period is active, [flow] and [activeIds] carry
+/// the window's gross [[Flow]] and the set of Contacts with activity in range;
+/// both are null at All time.
 class _HomeData {
-  const _HomeData(this.contacts, this.balances, this.activity, this.totals);
+  const _HomeData(
+    this.contacts,
+    this.balances,
+    this.activity,
+    this.totals, {
+    this.flow,
+    this.activeIds,
+  });
 
   final List<Contact> contacts;
   final Map<int, Balance> balances;
   final Map<int, DateTime> activity;
   final LedgerTotals totals;
+  final Flow? flow;
+  final Set<int>? activeIds;
 }
 
 class _HomeScreenState extends State<HomeScreen> {
@@ -54,6 +69,12 @@ class _HomeScreenState extends State<HomeScreen> {
   String _query = '';
   ContactSortField _sortField = ContactSortField.activity;
   bool _ascending = false;
+
+  // Period filter (#7): a visibility filter, never a balance filter. Ephemeral
+  // like search/sort; persists across a lens switch, resets on restart.
+  PeriodOption _period = PeriodOption.allTime;
+  DateTime? _customStart;
+  DateTime? _customEnd;
 
   @override
   void initState() {
@@ -77,7 +98,56 @@ class _HomeScreenState extends State<HomeScreen> {
     final activity = await widget.entryRepository.lastActivityByCurrency(
       currency,
     );
-    return _HomeData(contacts, balances, activity, totalsOf(balances.values));
+    final totals = totalsOf(balances.values);
+
+    // A bounded period adds a visibility set + flow header; balances stay
+    // all-time. All time leaves both null (no filter, net-position header).
+    final range = resolvePeriod(
+      _period,
+      DateTime.now(),
+      customStart: _customStart,
+      customEnd: _customEnd,
+    );
+    if (range == null) {
+      return _HomeData(contacts, balances, activity, totals);
+    }
+    final windowed = await widget.entryRepository.entriesInRange(
+      currency,
+      range,
+    );
+    return _HomeData(
+      contacts,
+      balances,
+      activity,
+      totals,
+      flow: flowTotalsOf(windowed),
+      activeIds: {for (final e in windowed) e.contactId},
+    );
+  }
+
+  Future<void> _selectPeriod(PeriodOption option) async {
+    if (option == PeriodOption.custom) {
+      final picked = await showDateRangePicker(
+        context: context,
+        firstDate: DateTime(2000),
+        lastDate: DateTime(DateTime.now().year + 1, 12, 31),
+        initialDateRange: _customStart != null && _customEnd != null
+            ? DateTimeRange(start: _customStart!, end: _customEnd!)
+            : null,
+      );
+      if (picked == null) return; // cancelled — keep the current period
+      setState(() {
+        _period = PeriodOption.custom;
+        _customStart = picked.start;
+        _customEnd = picked.end;
+        _load();
+      });
+      return;
+    }
+    setState(() {
+      _period = option;
+      _load();
+    });
   }
 
   /// Each field's natural direction the first time it is chosen; tapping the
@@ -152,16 +222,35 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                 }
+                // Period is a visibility filter (applied first), then search,
+                // then sort. A null activeIds means All time (no filtering).
+                final inPeriod = data.activeIds == null
+                    ? data.contacts
+                    : data.contacts
+                        .where((c) => data.activeIds!.contains(c.id))
+                        .toList();
                 final visible = sortContacts(
-                  filterContacts(data.contacts, _query),
+                  filterContacts(inPeriod, _query),
                   _sortField,
                   balances: data.balances,
                   activity: data.activity,
                   ascending: _ascending,
                 );
+                // No contacts survive the period → empty-period; otherwise it
+                // was the search box that cleared them → no-matches.
+                final emptyMessage = inPeriod.isEmpty
+                    ? l10n.homeNoActivityInPeriod
+                    : l10n.homeNoMatches;
                 return Column(
                   children: [
-                    _TotalsHeader(totals: data.totals, currency: _currency),
+                    // Flow header when a bounded period is active; the all-time
+                    // net-position header otherwise. Flow follows the period
+                    // alone — search never changes it.
+                    if (data.flow != null)
+                      _FlowHeader(flow: data.flow!, currency: _currency)
+                    else
+                      _TotalsHeader(totals: data.totals, currency: _currency),
+                    _PeriodSelector(period: _period, onSelected: _selectPeriod),
                     _ContactSearchSortBar(
                       controller: _searchController,
                       sortField: _sortField,
@@ -173,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: visible.isEmpty
                           ? Center(
                               child: Text(
-                                l10n.homeNoMatches,
+                                emptyMessage,
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                             )
@@ -367,6 +456,91 @@ class _HomeScreenState extends State<HomeScreen> {
   String _initial(String name) {
     final trimmed = name.trim();
     return trimmed.isEmpty ? '?' : trimmed.characters.first.toUpperCase();
+  }
+}
+
+/// The home period filter (#7): a visibility filter over the Contact list plus
+/// the [[Flow]] header mode. Custom opens a date-range picker (handled upstream).
+class _PeriodSelector extends StatelessWidget {
+  const _PeriodSelector({required this.period, required this.onSelected});
+
+  final PeriodOption period;
+  final ValueChanged<PeriodOption> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    String label(PeriodOption p) => switch (p) {
+      PeriodOption.allTime => l10n.periodAllTime,
+      PeriodOption.thisMonth => l10n.periodThisMonth,
+      PeriodOption.lastMonth => l10n.periodLastMonth,
+      PeriodOption.thisYear => l10n.periodThisYear,
+      PeriodOption.custom => l10n.periodCustom,
+    };
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: PopupMenuButton<PeriodOption>(
+          tooltip: l10n.periodLabel,
+          initialValue: period,
+          onSelected: onSelected,
+          itemBuilder: (context) => [
+            for (final p in PeriodOption.values)
+              CheckedPopupMenuItem(
+                value: p,
+                checked: p == period,
+                child: Text(label(p)),
+              ),
+          ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.event, size: 18),
+              const SizedBox(width: 6),
+              Text(label(period)),
+              const Icon(Icons.arrow_drop_down),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The grand-total header in [[Flow]] mode: gross lent / received for the active
+/// window. Replaces the net-position [_TotalsHeader] when a period is bounded.
+class _FlowHeader extends StatelessWidget {
+  const _FlowHeader({required this.flow, required this.currency});
+
+  final Flow flow;
+  final Currency currency;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: _TotalTile(
+              label: l10n.flowLent,
+              amount: formatMoney(flow.lent, currency),
+              color: _green,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _TotalTile(
+              label: l10n.flowReceived,
+              amount: formatMoney(flow.received, currency),
+              color: _red,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

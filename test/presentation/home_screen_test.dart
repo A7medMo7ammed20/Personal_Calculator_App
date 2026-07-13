@@ -106,4 +106,76 @@ void main() {
     expect(find.text('Ali'), findsOneWidget);
     expect(find.text('Sara'), findsNothing);
   });
+
+  Future<void> addEntry(
+    int contactId, {
+    required double amount,
+    Direction direction = Direction.owedToMe,
+    required DateTime when,
+  }) =>
+      entries.add(Entry(
+        contactId: contactId,
+        amount: amount,
+        direction: direction,
+        currency: Currency.sar,
+        createdAt: when,
+      ));
+
+  testWidgets(
+      'This month hides out-of-range contacts, keeps all-time balance, shows flow',
+      (tester) async {
+    final ali = await contacts.add(const Contact(name: 'Ali'));
+    final sara = await contacts.add(const Contact(name: 'Sara'));
+    // Ali: an old debt plus recent activity -> all-time balance 1250.
+    await addEntry(ali.id!, amount: 1000, when: DateTime(2020, 1, 1));
+    await addEntry(ali.id!, amount: 250, when: DateTime.now());
+    // Sara: only an old debt, so no activity this month.
+    await addEntry(sara.id!, amount: 500, when: DateTime(2020, 1, 1));
+
+    await tester.pumpWidget(_wrap(
+      HomeScreen(repository: contacts, entryRepository: entries),
+    ));
+    await tester.pumpAndSettle();
+
+    // All time: both contacts, net-position header.
+    expect(find.text('Ali'), findsOneWidget);
+    expect(find.text('Sara'), findsOneWidget);
+    expect(find.text('Owed to you'), findsOneWidget);
+
+    // Switch the period to This month.
+    await tester.tap(find.text('All time'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('This month').last, warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    // Sara drops out (no activity this month); Ali stays.
+    expect(find.text('Sara'), findsNothing);
+    expect(find.text('Ali'), findsOneWidget);
+    // Ali's row still shows the TRUE all-time balance (1250), not the window.
+    expect(find.text('owes you 1,250.00 ر.س'), findsOneWidget);
+    // Header is now flow (Lent/Received), not the net-position totals.
+    expect(find.text('Lent'), findsOneWidget);
+    expect(find.text('Received'), findsOneWidget);
+    expect(find.text('Owed to you'), findsNothing);
+    expect(find.text('250.00 ر.س'), findsOneWidget); // lent this month
+  });
+
+  testWidgets('a period with no activity shows the empty-period state',
+      (tester) async {
+    final ali = await contacts.add(const Contact(name: 'Ali'));
+    await addEntry(ali.id!, amount: 100, when: DateTime(2020, 1, 1));
+
+    await tester.pumpWidget(_wrap(
+      HomeScreen(repository: contacts, entryRepository: entries),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('All time'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('This month').last, warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ali'), findsNothing);
+    expect(find.text('No activity in this period'), findsOneWidget);
+  });
 }

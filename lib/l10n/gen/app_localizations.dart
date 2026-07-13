@@ -356,6 +356,60 @@ abstract class AppLocalizations {
   /// **'Balance'**
   String get sortByBalanceSize;
 
+  /// Label/tooltip for the home period filter (#7).
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get periodLabel;
+
+  /// Period option: no time filter (default).
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get periodAllTime;
+
+  /// Period option: the current calendar month.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get periodThisMonth;
+
+  /// Period option: the previous calendar month.
+  ///
+  /// In en, this message translates to:
+  /// **'Last month'**
+  String get periodLastMonth;
+
+  /// Period option: the current calendar year.
+  ///
+  /// In en, this message translates to:
+  /// **'This year'**
+  String get periodThisYear;
+
+  /// Period option: a user-picked date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get periodCustom;
+
+  /// Home flow-header label: total lent in the window (owed-to-me).
+  ///
+  /// In en, this message translates to:
+  /// **'Lent'**
+  String get flowLent;
+
+  /// Home flow-header label: total received in the window (owed-by-me).
+  ///
+  /// In en, this message translates to:
+  /// **'Received'**
+  String get flowReceived;
+
+  /// Shown on home when no contact has activity in the selected period.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity in this period'**
+  String get homeNoActivityInPeriod;
+
   /// Title of the running-summary bottom sheet, showing the tapped entry's date.
   ///
   /// In en, this message translates to:

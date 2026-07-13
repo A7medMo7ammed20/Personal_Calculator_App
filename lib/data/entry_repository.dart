@@ -1,6 +1,7 @@
 import '../domain/balance.dart';
 import '../domain/currency.dart';
 import '../domain/entry.dart';
+import '../domain/period.dart';
 import 'app_database.dart';
 
 /// Reads and writes [Entry]s in SQLite.
@@ -92,6 +93,24 @@ class EntryRepository {
         row['contact_id'] as int:
             DateTime.fromMillisecondsSinceEpoch(row['last_at'] as int),
     };
+  }
+
+  /// Entries in one [currency] whose timestamp falls in the half-open [range]
+  /// `[start, endExclusive)`. Feeds the home period filter's visibility set and
+  /// [[Flow]] header (#7); the [[Balance]] is never computed from this.
+  Future<List<Entry>> entriesInRange(Currency currency, DateRange range) async {
+    final db = await _appDb.open();
+    final rows = await db.query(
+      table,
+      where: 'currency = ? AND created_at >= ? AND created_at < ?',
+      whereArgs: [
+        currency.code,
+        range.start.millisecondsSinceEpoch,
+        range.endExclusive.millisecondsSinceEpoch,
+      ],
+      orderBy: 'created_at DESC, id DESC',
+    );
+    return rows.map(_fromRow).toList();
   }
 
   Map<String, Object?> _toRow(Entry e) => {

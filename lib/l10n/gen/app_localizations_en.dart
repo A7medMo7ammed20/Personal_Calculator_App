@@ -152,6 +152,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sortByBalanceSize => 'Balance';
 
   @override
+  String get periodLabel => 'Period';
+
+  @override
+  String get periodAllTime => 'All time';
+
+  @override
+  String get periodThisMonth => 'This month';
+
+  @override
+  String get periodLastMonth => 'Last month';
+
+  @override
+  String get periodThisYear => 'This year';
+
+  @override
+  String get periodCustom => 'Custom';
+
+  @override
+  String get flowLent => 'Lent';
+
+  @override
+  String get flowReceived => 'Received';
+
+  @override
+  String get homeNoActivityInPeriod => 'No activity in this period';
+
+  @override
   String summaryTitle(String date) {
     return 'Summary up to $date';
   }

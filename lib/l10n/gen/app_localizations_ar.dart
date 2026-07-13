@@ -154,6 +154,33 @@ class AppLocalizationsAr extends AppLocalizations {
   String get sortByBalanceSize => 'الرصيد';
 
   @override
+  String get periodLabel => 'الفترة';
+
+  @override
+  String get periodAllTime => 'كل الوقت';
+
+  @override
+  String get periodThisMonth => 'هذا الشهر';
+
+  @override
+  String get periodLastMonth => 'الشهر الماضي';
+
+  @override
+  String get periodThisYear => 'هذه السنة';
+
+  @override
+  String get periodCustom => 'مخصص';
+
+  @override
+  String get flowLent => 'المدفوع';
+
+  @override
+  String get flowReceived => 'المقبوض';
+
+  @override
+  String get homeNoActivityInPeriod => 'لا نشاط في هذه الفترة';
+
+  @override
   String summaryTitle(String date) {
     return 'الملخّص حتى $date';
   }
