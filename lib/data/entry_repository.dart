@@ -34,6 +34,24 @@ class EntryRepository {
     return rows.map(_fromRow).toList();
   }
 
+  /// Overwrites the stored row identified by [Entry.id] (which must be non-null)
+  /// with [entry]'s current values. Edits are in place — no audit trail.
+  Future<void> update(Entry entry) async {
+    final db = await _appDb.open();
+    await db.update(
+      table,
+      _toRow(entry),
+      where: 'id = ?',
+      whereArgs: [entry.id],
+    );
+  }
+
+  /// Deletes the Entry with primary key [id].
+  Future<void> delete(int id) async {
+    final db = await _appDb.open();
+    await db.delete(table, where: 'id = ?', whereArgs: [id]);
+  }
+
   /// Per-Contact net [Balance] within one [currency], keyed by contact id.
   /// Contacts with no entries in [currency] are absent from the map. The two
   /// currencies are queried independently and never summed (see CONTEXT.md).

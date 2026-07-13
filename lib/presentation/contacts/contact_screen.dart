@@ -6,9 +6,11 @@ import '../../domain/balance.dart';
 import '../../domain/contact.dart';
 import '../../domain/currency.dart';
 import '../../domain/entry.dart';
+import '../../domain/entry_sort.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../entries/add_entry_screen.dart';
 import '../money_format.dart';
+import 'running_summary_sheet.dart';
 
 /// The heart of the ledger: one Contact's Entries plus a live per-Contact
 /// [Balance]. Repayment is just an opposite-direction Entry — nothing special
@@ -39,10 +41,21 @@ class _ContactScreenState extends State<ContactScreen> {
 
   late Future<List<Entry>> _entries;
 
+  final _searchController = TextEditingController();
+  String _query = '';
+  EntrySortField _sortField = EntrySortField.date;
+  bool _ascending = false; // newest-first default (created_at DESC)
+
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _load() {
@@ -79,13 +92,32 @@ class _ContactScreenState extends State<ContactScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           final entries = snapshot.data ?? const <Entry>[];
-          final balance = balanceOf(entries);
+          final balance = balanceOf(entries); // balance is over ALL entries
+          final visible = sortEntries(
+            filterEntriesByDescription(entries, _query),
+            _sortField,
+            ascending: _ascending,
+          );
           return Column(
             children: [
               _BalanceHeader(
                 balance: balance,
                 label: _balanceLabel(l10n, balance),
                 color: _balanceColor(balance),
+              ),
+              _EntrySearchSortBar(
+                controller: _searchController,
+                sortField: _sortField,
+                ascending: _ascending,
+                onQueryChanged: (q) => setState(() => _query = q),
+                onSortSelected: (field) => setState(() {
+                  if (_sortField == field) {
+                    _ascending = !_ascending; // tapping active field toggles
+                  } else {
+                    _sortField = field;
+                    _ascending = true;
+                  }
+                }),
               ),
               Expanded(
                 child: entries.isEmpty
@@ -96,10 +128,10 @@ class _ContactScreenState extends State<ContactScreen> {
                         ),
                       )
                     : ListView.separated(
-                        itemCount: entries.length,
+                        itemCount: visible.length,
                         separatorBuilder: (_, _) => const Divider(height: 1),
                         itemBuilder: (context, index) =>
-                            _entryTile(context, l10n, entries[index]),
+                            _dismissibleEntry(context, l10n, entries, visible[index]),
                       ),
               ),
             ],
@@ -128,7 +160,104 @@ class _ContactScreenState extends State<ContactScreen> {
     return balance.isOwedToMe ? _green : _red;
   }
 
-  Widget _entryTile(BuildContext context, AppLocalizations l10n, Entry entry) {
+  Widget _dismissibleEntry(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<Entry> allEntries,
+    Entry entry,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    return Dismissible(
+      key: ValueKey('entry-${entry.id}'),
+      // Swipe toward END = delete (red). Confirmed, then undoable.
+      background: Container(
+        color: _red.withValues(alpha: 0.90),
+        alignment: AlignmentDirectional.centerStart,
+        padding: const EdgeInsetsDirectional.only(start: 20),
+        child: Icon(Icons.delete, color: scheme.onError),
+      ),
+      // Swipe toward START = edit (blue). Never dismisses the tile.
+      secondaryBackground: Container(
+        color: Colors.blue.withValues(alpha: 0.85),
+        alignment: AlignmentDirectional.centerEnd,
+        padding: const EdgeInsetsDirectional.only(end: 20),
+        child: const Icon(Icons.edit, color: Colors.white),
+      ),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          final ok = await _confirmDeleteEntry(l10n);
+          return ok;
+        } else {
+          await _editEntry(entry);
+          return false; // edit never dismisses
+        }
+      },
+      onDismissed: (_) => _deleteEntry(entry),
+      child: _entryTile(context, l10n, allEntries, entry),
+    );
+  }
+
+  Future<bool> _confirmDeleteEntry(AppLocalizations l10n) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.deleteEntryTitle),
+        content: Text(l10n.deleteEntryMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
+  }
+
+  Future<void> _deleteEntry(Entry entry) async {
+    await widget.repository.delete(entry.id!);
+    if (!mounted) return;
+    setState(_load);
+    final l10n = AppLocalizations.of(context);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(l10n.entryDeleted),
+        action: SnackBarAction(
+          label: l10n.undo,
+          onPressed: () async {
+            // Re-insert as a fresh row; nothing references entry ids.
+            await widget.repository.add(entry.copyWith(id: null));
+            if (mounted) setState(_load);
+          },
+        ),
+      ));
+  }
+
+  Future<void> _editEntry(Entry entry) async {
+    final updated = await Navigator.of(context).push<Entry>(
+      MaterialPageRoute(
+        builder: (_) => AddEntryScreen(
+          contactId: widget.contact.id!,
+          repository: widget.repository,
+          currency: widget.currency,
+          existing: entry,
+        ),
+      ),
+    );
+    if (updated != null && mounted) setState(_load);
+  }
+
+  Widget _entryTile(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<Entry> allEntries,
+    Entry entry,
+  ) {
     final toMe = entry.direction == Direction.owedToMe;
     final color = toMe ? _green : _red;
     final date = DateFormat.yMMMd(
@@ -137,6 +266,12 @@ class _ContactScreenState extends State<ContactScreen> {
     final sign = toMe ? '+' : '−';
 
     return ListTile(
+      onTap: () => showRunningSummarySheet(
+        context,
+        entries: allEntries,
+        tapped: entry,
+        currency: widget.currency,
+      ),
       leading: CircleAvatar(
         backgroundColor: color.withValues(alpha: 0.15),
         foregroundColor: color,
@@ -190,6 +325,68 @@ class _BalanceHeader extends StatelessWidget {
               color: color,
               fontWeight: FontWeight.bold,
             ),
+      ),
+    );
+  }
+}
+
+/// Search field plus a sort control (Date / Value / Description) for the
+/// Contact's own entries (#15). Tapping the active sort field toggles asc/desc.
+class _EntrySearchSortBar extends StatelessWidget {
+  const _EntrySearchSortBar({
+    required this.controller,
+    required this.sortField,
+    required this.ascending,
+    required this.onQueryChanged,
+    required this.onSortSelected,
+  });
+
+  final TextEditingController controller;
+  final EntrySortField sortField;
+  final bool ascending;
+  final ValueChanged<String> onQueryChanged;
+  final ValueChanged<EntrySortField> onSortSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    String label(EntrySortField f) => switch (f) {
+      EntrySortField.date => l10n.sortByDate,
+      EntrySortField.value => l10n.sortByValue,
+      EntrySortField.description => l10n.sortByDescription,
+    };
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              onChanged: onQueryChanged,
+              decoration: InputDecoration(
+                isDense: true,
+                prefixIcon: const Icon(Icons.search),
+                hintText: l10n.searchEntriesHint,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          PopupMenuButton<EntrySortField>(
+            tooltip: l10n.sortLabel,
+            icon: Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward),
+            initialValue: sortField,
+            onSelected: onSortSelected,
+            itemBuilder: (context) => [
+              for (final f in EntrySortField.values)
+                CheckedPopupMenuItem(
+                  value: f,
+                  checked: f == sortField,
+                  child: Text(label(f)),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

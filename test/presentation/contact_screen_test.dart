@@ -146,4 +146,70 @@ void main() {
     expect(find.text('Enter an amount'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Save'), findsOneWidget);
   });
+
+  testWidgets('searching filters the entry list by description', (tester) async {
+    await entries.add(Entry(
+      contactId: contact.id!, amount: 10, direction: Direction.owedToMe,
+      currency: Currency.sar, createdAt: DateTime(2026, 7, 1), description: 'Lunch',
+    ));
+    await entries.add(Entry(
+      contactId: contact.id!, amount: 20, direction: Direction.owedToMe,
+      currency: Currency.sar, createdAt: DateTime(2026, 7, 2), description: 'Taxi',
+    ));
+
+    await tester.pumpWidget(_wrap(
+      const Locale('en'),
+      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lunch'), findsOneWidget);
+    expect(find.text('Taxi'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).first, 'lunch');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Lunch'), findsOneWidget);
+    expect(find.text('Taxi'), findsNothing);
+  });
+
+  testWidgets('swipe-to-delete asks for confirmation then removes on confirm',
+      (tester) async {
+    await entries.add(seed(contact.id!, Direction.owedToMe, 150));
+
+    await tester.pumpWidget(_wrap(
+      const Locale('en'),
+      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
+    ));
+    await tester.pumpAndSettle();
+
+    // Swipe the entry tile toward the end (LTR: to the right) = delete.
+    await tester.drag(find.byType(Dismissible).first, const Offset(500, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delete entry?'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(TextButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    // Balance falls back to settled; an undo SnackBar appears.
+    expect(find.text('Settled'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
+  });
+
+  testWidgets('tapping an entry opens the running summary sheet', (tester) async {
+    await entries.add(seed(contact.id!, Direction.owedToMe, 120));
+
+    await tester.pumpWidget(_wrap(
+      const Locale('en'),
+      ContactScreen(contact: contact, repository: entries, currency: Currency.sar),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(ListTile).first);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Summary up to'), findsOneWidget);
+    expect(find.textContaining('Owed to you'), findsWidgets);
+  });
 }
