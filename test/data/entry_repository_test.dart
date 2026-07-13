@@ -111,4 +111,29 @@ void main() {
 
     expect(await entries.listByContact(contact.id!), isEmpty);
   });
+
+  test('update changes a stored Entry in place', () async {
+    final contact = await contacts.add(const Contact(name: 'Edit Me'));
+    final saved = await entries.add(sample(contact.id!, amount: 100));
+
+    await entries.update(
+      saved.copyWith(amount: 250, direction: Direction.owedByMe),
+    );
+
+    final stored = (await entries.listByContact(contact.id!)).single;
+    expect(stored.id, saved.id);
+    expect(stored.amount, 250);
+    expect(stored.direction, Direction.owedByMe);
+  });
+
+  test('delete removes only the given Entry', () async {
+    final contact = await contacts.add(const Contact(name: 'Two Rows'));
+    final keep = await entries.add(sample(contact.id!, amount: 10));
+    final drop = await entries.add(sample(contact.id!, amount: 20));
+
+    await entries.delete(drop.id!);
+
+    final remaining = await entries.listByContact(contact.id!);
+    expect(remaining.map((e) => e.id), [keep.id]);
+  });
 }
