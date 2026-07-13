@@ -13,11 +13,8 @@ import '../../l10n/gen/app_localizations.dart';
 import '../contacts/add_contact_screen.dart';
 import '../contacts/contact_screen.dart';
 import '../money_format.dart';
+import '../theme/theme_context.dart';
 import '../widgets/item_actions_overlay.dart';
-
-/// Owed-to-me green and owed-by-me red, shared across the ledger screens.
-const Color _green = Color(0xFF2E7D5B);
-const Color _red = Color(0xFFC0392B);
 
 /// Home screen: a global currency lens, per-currency grand totals, and the
 /// Contact list showing each Contact's balance in the selected currency. The
@@ -327,7 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         ItemAction(
           icon: Icons.delete,
-          color: _red,
+          color: Theme.of(tileContext).colorScheme.error,
           label: l10n.delete,
           onSelected: () => _deleteContactWithConfirm(l10n, contact),
         ),
@@ -422,15 +419,16 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     final String label;
     final Color color;
+    final semantics = context.semanticColors;
     if (balance.isSettled) {
       label = l10n.balanceSettled;
-      color = Theme.of(context).colorScheme.outline;
+      color = semantics.settled;
     } else {
       final amount = formatMoney(balance.magnitude, _currency);
       label = balance.isOwedToMe
           ? l10n.balanceOwedToMe(amount)
           : l10n.balanceOwedByMe(amount);
-      color = balance.isOwedToMe ? _green : _red;
+      color = balance.isOwedToMe ? semantics.owedToMe : semantics.owedByMe;
     }
     // Builder so the long-press callback gets a context whose RenderObject is
     // this tile (not the enclosing list), giving the overlay its anchor rect.
@@ -527,7 +525,7 @@ class _FlowHeader extends StatelessWidget {
             child: _TotalTile(
               label: l10n.flowLent,
               amount: formatMoney(flow.lent, currency),
-              color: _green,
+              color: context.semanticColors.owedToMe,
             ),
           ),
           const SizedBox(width: 12),
@@ -535,7 +533,7 @@ class _FlowHeader extends StatelessWidget {
             child: _TotalTile(
               label: l10n.flowReceived,
               amount: formatMoney(flow.received, currency),
-              color: _red,
+              color: context.semanticColors.owedByMe,
             ),
           ),
         ],
@@ -649,7 +647,7 @@ class _TotalsHeader extends StatelessWidget {
             child: _TotalTile(
               label: l10n.homeTotalOwedToMe,
               amount: formatMoney(totals.owedToMe, currency),
-              color: _green,
+              color: context.semanticColors.owedToMe,
             ),
           ),
           const SizedBox(width: 12),
@@ -657,7 +655,7 @@ class _TotalsHeader extends StatelessWidget {
             child: _TotalTile(
               label: l10n.homeTotalOwedByMe,
               amount: formatMoney(totals.owedByMe, currency),
-              color: _red,
+              color: context.semanticColors.owedByMe,
             ),
           ),
         ],

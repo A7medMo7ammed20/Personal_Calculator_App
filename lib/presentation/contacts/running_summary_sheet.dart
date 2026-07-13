@@ -7,9 +7,7 @@ import '../../domain/entry.dart';
 import '../../domain/running_summary.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../money_format.dart';
-
-const Color _green = Color(0xFF2E7D5B);
-const Color _red = Color(0xFFC0392B);
+import '../theme/theme_context.dart';
 
 /// Shows the running summary up to [tapped]: dated rows oldest→newest with the
 /// tapped entry anchored at the bottom (older history scrolls up), and the two
@@ -95,7 +93,7 @@ class _RunningSummaryBody extends StatelessWidget {
   ) {
     final e = row.entry;
     final toMe = e.direction == Direction.owedToMe;
-    final color = toMe ? _green : _red;
+    final color = toMe ? context.semanticColors.owedToMe : context.semanticColors.owedByMe;
     final date = DateFormat.yMMMd(locale).format(e.createdAt);
     final sign = toMe ? '+' : '−';
     return ListTile(
@@ -136,9 +134,10 @@ class _PinnedTotals extends StatelessWidget {
           : l10n.balanceOwedByMe(amount);
     }
 
+    final semantics = context.semanticColors;
     final netColor = balance.isSettled
-        ? Theme.of(context).colorScheme.outline
-        : (balance.isOwedToMe ? _green : _red);
+        ? semantics.settled
+        : (balance.isOwedToMe ? semantics.owedToMe : semantics.owedByMe);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
@@ -148,12 +147,12 @@ class _PinnedTotals extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _totalColumn(
-                  context, l10n.homeTotalOwedToMe, formatMoney(toMe, currency), _green),
+                child: _totalColumn(context, l10n.homeTotalOwedToMe,
+                    formatMoney(toMe, currency), semantics.owedToMe),
               ),
               Expanded(
-                child: _totalColumn(
-                  context, l10n.homeTotalOwedByMe, formatMoney(byMe, currency), _red),
+                child: _totalColumn(context, l10n.homeTotalOwedByMe,
+                    formatMoney(byMe, currency), semantics.owedByMe),
               ),
             ],
           ),

@@ -66,6 +66,32 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # IBM Plex Sans (Latin) + IBM Plex Sans Arabic, bundled as assets so the app
+  # stays fully offline (ADR 0001). The Arabic family renders for `ar` via the
+  # text theme's fontFamilyFallback. Weights: Regular 400 / Medium 500 /
+  # SemiBold 600 / Bold 700 — see docs/design-system.md.
+  fonts:
+    - family: IBM Plex Sans
+      fonts:
+        - asset: assets/fonts/IBMPlexSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSans-Bold.ttf
+          weight: 700
+    - family: IBM Plex Sans Arabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSansArabic-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700
+
   # To add assets to your application, add an assets section, like this:
   # assets:
   #   - images/a_dot_burr.jpeg
