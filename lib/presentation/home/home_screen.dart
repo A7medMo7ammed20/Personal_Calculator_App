@@ -13,8 +13,14 @@ import '../../l10n/gen/app_localizations.dart';
 import '../contacts/add_contact_screen.dart';
 import '../contacts/contact_screen.dart';
 import '../money_format.dart';
+import '../settings/settings_screen.dart';
 import '../theme/theme_context.dart';
+import '../theme/theme_controller.dart';
 import '../widgets/item_actions_overlay.dart';
+
+/// Global destinations behind the home overflow menu (⋮). Settings today;
+/// Backup joins when it ships.
+enum _HomeMenuAction { settings }
 
 /// Home screen: a global currency lens, per-currency grand totals, and the
 /// Contact list showing each Contact's balance in the selected currency. The
@@ -24,10 +30,16 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.repository,
     required this.entryRepository,
+    this.themeController,
   });
 
   final ContactRepository repository;
   final EntryRepository entryRepository;
+
+  /// Drives the Settings screen reached from the overflow menu. Optional so
+  /// focused widget tests can pump the list without wiring theming; the real
+  /// app always supplies it (see `DebtLedgerApp`).
+  final ThemeController? themeController;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -172,6 +184,18 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _onMenuAction(_HomeMenuAction action, AppLocalizations l10n) {
+    switch (action) {
+      case _HomeMenuAction.settings:
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                SettingsScreen(controller: widget.themeController!),
+          ),
+        );
+    }
+  }
+
   Future<void> _addContact() async {
     final saved = await Navigator.of(context).push<Contact>(
       MaterialPageRoute(
@@ -199,7 +223,29 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.appTitle)),
+      appBar: AppBar(
+        title: Text(l10n.appTitle),
+        actions: [
+          if (widget.themeController != null)
+            PopupMenuButton<_HomeMenuAction>(
+              // Rarely-used global destinations live behind the overflow menu
+              // (ADR 0003); Backup joins Settings here when it lands.
+              onSelected: (action) => _onMenuAction(action, l10n),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: _HomeMenuAction.settings,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.settings),
+                      SizedBox(width: context.spacing.md),
+                      Text(l10n.settingsTitle),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
       body: Column(
         children: [
           _CurrencyLens(selected: _currency, onSelected: _selectCurrency),

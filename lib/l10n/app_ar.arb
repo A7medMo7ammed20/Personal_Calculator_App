@@ -52,5 +52,15 @@
   "flowLent": "المدفوع",
   "flowReceived": "المقبوض",
   "homeNoActivityInPeriod": "لا نشاط في هذه الفترة",
-  "summaryTitle": "الملخّص حتى {date}"
+  "summaryTitle": "الملخّص حتى {date}",
+  "settingsTitle": "الإعدادات",
+  "settingsAccent": "لون التمييز",
+  "settingsAppearance": "المظهر",
+  "themeSystem": "حسب النظام",
+  "themeLight": "فاتح",
+  "themeDark": "داكن",
+  "accentTeal": "أزرق مخضر",
+  "accentIndigo": "نيلي",
+  "accentPlum": "برقوقي",
+  "accentOcean": "أزرق محيطي"
 }
