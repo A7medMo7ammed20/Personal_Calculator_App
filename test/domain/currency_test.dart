@@ -20,4 +20,24 @@ void main() {
       expect(() => Currency.fromCode('USD'), throwsArgumentError);
     });
   });
+
+  group('safe default parse', () {
+    test('defaultCurrency is SAR', () {
+      expect(Currency.defaultCurrency, Currency.sar);
+    });
+
+    test('fromCodeOrDefault round-trips known codes', () {
+      expect(Currency.fromCodeOrDefault('SAR'), Currency.sar);
+      expect(Currency.fromCodeOrDefault('YER'), Currency.yer);
+    });
+
+    test('fromCodeOrDefault degrades to SAR on unknown or null', () {
+      expect(Currency.fromCodeOrDefault('USD'), Currency.sar);
+      expect(Currency.fromCodeOrDefault(null), Currency.sar);
+    });
+
+    test('fromCode still throws on unknown (unchanged)', () {
+      expect(() => Currency.fromCode('USD'), throwsArgumentError);
+    });
+  });
 }

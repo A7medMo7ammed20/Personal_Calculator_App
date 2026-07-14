@@ -25,4 +25,18 @@ enum Currency {
       orElse: () => throw ArgumentError.value(code, 'code', 'Unknown currency'),
     );
   }
+
+  /// The shipped default lens/seed. The settings path degrades to this rather
+  /// than throwing (ADR 0007).
+  static const Currency defaultCurrency = Currency.sar;
+
+  /// Parses a persisted [code], degrading to [defaultCurrency] on an unknown or
+  /// missing value. Use this for the `default_currency` setting; [fromCode]
+  /// (which throws) stays reserved for trusted entry-row codes.
+  static Currency fromCodeOrDefault(String? code) {
+    for (final currency in values) {
+      if (currency.code == code) return currency;
+    }
+    return defaultCurrency;
+  }
 }
