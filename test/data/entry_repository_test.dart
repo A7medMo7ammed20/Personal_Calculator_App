@@ -245,4 +245,27 @@ void main() {
 
     expect(list.map((e) => e.id), [before.id]);
   });
+
+  test('archived contacts drop out of every aggregate but keep their history',
+      () async {
+    final a = await contacts.add(const Contact(name: 'Active'));
+    final z = await contacts.add(const Contact(name: 'Archived'));
+    await entries.add(inCurrency(a.id!, Currency.sar, DateTime(2026, 7, 1)));
+    await entries.add(inCurrency(z.id!, Currency.sar, DateTime(2026, 7, 2)));
+    await contacts.setArchived(z.id!, archived: true);
+
+    expect((await entries.balancesByCurrency(Currency.sar)).keys, [a.id]);
+    expect((await entries.lastActivityByCurrency(Currency.sar)).keys, [a.id]);
+    expect(
+      (await entries.listByCurrency(Currency.sar)).map((e) => e.contactId),
+      [a.id],
+    );
+    final wide = DateRange(DateTime(2026, 1, 1), DateTime(2027, 1, 1));
+    expect(
+      (await entries.entriesInRange(Currency.sar, wide)).map((e) => e.contactId),
+      [a.id],
+    );
+    // The archived contact's own ledger is still fully visible.
+    expect(await entries.listByContact(z.id!), isNotEmpty);
+  });
 }

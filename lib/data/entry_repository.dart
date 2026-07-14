@@ -13,6 +13,14 @@ class EntryRepository {
 
   static const String table = 'entries';
 
+  /// The four aggregate queries (balances, activity, analysis series, flow
+  /// window) count only *active* contacts: an archived contact drops out of
+  /// every total while [listByContact] keeps their own ledger intact (#25).
+  /// The literal `'contacts'` is used instead of importing [ContactRepository]
+  /// to avoid a mutual import.
+  static const String _activeContactsOnly =
+      'contact_id IN (SELECT id FROM contacts WHERE archived = 0)';
+
   final AppDatabase _appDb;
 
   /// Inserts [entry] and returns it with its assigned [Entry.id].
@@ -63,7 +71,7 @@ class EntryRepository {
       SELECT contact_id,
              SUM(CASE WHEN direction = ? THEN amount ELSE -amount END) AS signed
       FROM $table
-      WHERE currency = ?
+      WHERE currency = ? AND $_activeContactsOnly
       GROUP BY contact_id
       ''',
       [Direction.owedToMe.code, currency.code],
@@ -83,7 +91,7 @@ class EntryRepository {
       '''
       SELECT contact_id, MAX(created_at) AS last_at
       FROM $table
-      WHERE currency = ?
+      WHERE currency = ? AND $_activeContactsOnly
       GROUP BY contact_id
       ''',
       [currency.code],
@@ -102,7 +110,8 @@ class EntryRepository {
     final db = await _appDb.open();
     final rows = await db.query(
       table,
-      where: 'currency = ? AND created_at >= ? AND created_at < ?',
+      where: 'currency = ? AND created_at >= ? AND created_at < ? '
+          'AND $_activeContactsOnly',
       whereArgs: [
         currency.code,
         range.start.millisecondsSinceEpoch,
@@ -122,8 +131,8 @@ class EntryRepository {
     final rows = await db.query(
       table,
       where: upTo == null
-          ? 'currency = ?'
-          : 'currency = ? AND created_at < ?',
+          ? 'currency = ? AND $_activeContactsOnly'
+          : 'currency = ? AND created_at < ? AND $_activeContactsOnly',
       whereArgs: [
         currency.code,
         if (upTo != null) upTo.millisecondsSinceEpoch,
