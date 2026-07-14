@@ -28,6 +28,8 @@ Whether an Entry is owed **to me** or **by me**. Set per Entry (not per Contact)
 ### Currency
 SAR or YER. Chosen per Entry. A single Contact may hold entries in both currencies, but each currency has its **own independent balance** — the two are never summed together. In the UI, currency is a **global lens**: **bottom tabs** (SAR / YER) — a floating pill bar with an animated indicator that slides to the active currency — select the currency, and the entire app (people list, per-currency grand totals, each Contact's entries and balance) reflects only the selected currency. The lens switches by **tapping** a tab (not by swiping the body; horizontal swipe is reserved for row actions — see [ADR 0005](docs/adr/0005-row-swipe-actions-and-tap-only-currency-lens.md)). Switching the global lens refilters everything. The Contact page inherits this global selection rather than having its own tab.
 
+The lens has a persisted **default currency** (set in Settings, #12) that seeds which currency is *active* when the app opens. The **active** lens and the **default** are distinct: tapping the bottom tabs moves the active lens for the current session only and never rewrites the default, whereas changing the default in Settings both live-switches the active lens *and* persists it as the launch default. So the two can diverge within a session and re-converge on the next launch. The default rides the [[Backup]] like the other settings (ADR 0002).
+
 The home header shows two per-currency totals for the selected currency: **Total owed to you** and **Total you owe**.
 
 - SAR — Saudi Riyal (ر.س)
@@ -38,7 +40,7 @@ A per-Contact, per-currency PDF export of a Contact's entries: a dated table (da
 
 Under an optional date-range filter (default: all time) the rows are **clipped in view** but the balance is **never recomputed over the window**: the statement **carries in the opening balance** from before the range, the running [[Balance]] and closing [[Balance]] stay the true all-time position, and only the two gross totals cover the in-range activity (opening + period activity = closing). This mirrors [ADR 0004](docs/adr/0004-analysis-graph-rendering-and-windowing.md) and upholds the [[Balance]] invariant — a windowed balance would falsely read 0 for an old, unpaid debt.
 
-Language follows the app; Arabic renders RTL. Distinct from the quick **WhatsApp share** — a tap-to-WhatsApp deep link with a pre-filled balance message for informal nudges.
+Language follows the app; Arabic renders RTL. Distinct from the quick [[WhatsApp share]] — a tap-to-WhatsApp deep link with a pre-filled balance message for informal nudges.
 
 ### Running summary
 An on-screen, per-Contact, per-currency preview of the [[Statement]] up to a
@@ -48,6 +50,34 @@ owed-by-me) and the net closing [[Balance]]. Built by a pure series function
 reused by the [[Analysis graph]] (#8) and the PDF [[Statement]] (#10).
 
 - Arabic: الملخّص الجاري
+
+### WhatsApp share
+A one-tap informal nudge from a [[Contact]] (#11): opens WhatsApp via a `wa.me`
+deep link to the Contact's phone, with a pre-filled **balance message** the user
+can freely edit in WhatsApp before sending. The message is written **from the
+owner to the Contact**, so its perspective is the *mirror* of the on-screen
+[[Balance]] labels — here "you" is the Contact, not the owner:
+
+- Contact owes the owner (owed-to-me) → "you owe me {amount}"
+- Owner owes the Contact (owed-by-me) → "I owe you {amount}"
+- [[Balance]] settled → a friendly settled note, no amount
+
+The amount is in the **active [[Currency]] lens** — per-lens like everything
+else, so a net-zero lens reads as settled even when the other currency is
+unsettled. Distinct from the formal PDF [[Statement]]: the share is informal,
+editable, and free-text-friendly, not a dated table.
+
+- Arabic: مشاركة واتساب
+
+### Tap-to-call
+Tapping a [[Contact]]'s displayed phone number opens the device dialer via a
+`tel:` link (populated, not auto-dialed). Sits beside the [[WhatsApp share]] in a
+small action strip on the Contact screen; the whole strip is **hidden** when the
+Contact has no phone. Both actions hand off to another app through the OS — Daftar
+itself makes no network call, so they stay within the local-only stance of
+[ADR 0001](docs/adr/0001-local-only-storage-with-manual-backup.md).
+
+- Arabic: اتصال بلمسة
 
 ### Profile
 The single local app owner (you). Name (required — appears as creditor on statements) + optional phone. No account, login, or email.
@@ -100,3 +130,18 @@ The running total for one Contact in one currency — the sum of all signed Entr
 - Owed by me → red, "عليك N ر.س" (EN: "you owe N")
 
 The raw signed value still exists underneath for sorting and PDF.
+
+### Reset account
+Zeroing one [[Contact]]'s [[Balance]] in the **active [[Currency]] lens** by appending a single balancing [[Entry]] — opposite direction, magnitude equal to the current balance. Consistent with the [[Balance]] rule that a settle *is* just an Entry (never a special record): the whole history is preserved and the settle line appears in the entry list, the PDF [[Statement]], and the [[Analysis graph]] like any other Entry. Scoped to the **active lens** — the other currency's balance is untouched — and disabled when that lens is already settled (nothing to zero). Undone by removing the settle Entry (it is a normal Entry). Distinct from [[Delete contact]] (removes the person) and [[Archive]] (hides them); a reset keeps the Contact and its past.
+
+- Arabic: تصفير الحساب (the settle Entry's description reads تسوية)
+
+### Archive
+A whole-person "set aside" state for a [[Contact]] — spans **both** currencies, unlike the per-lens [[Reset account]]. An archived Contact leaves the home list, the grand-total header, and the [[Analysis graph]] entirely, living instead under a separate **Archived** view reached from the home overflow (⋮). **Soft-gated:** allowed even with an unsettled [[Balance]], but the confirm dialog names any outstanding balance first ("Ali still owes you 300 ر.س. Archive anyway?"), so a live debt never leaves the totals silently. Reversible — unarchive from the Archived view, and adding a new [[Entry]] to an archived Contact **auto-unarchives** them (dealing with them again makes them active).
+
+- Arabic: أرشفة / الأرشيف
+
+### Delete contact
+Permanently removes a [[Contact]] and cascade-deletes all their [[Entry]] rows in both currencies (undoable only via the immediate Snackbar). The hard end of the contact lifecycle: [[Reset account]] keeps the person and their history, [[Archive]] hides the person but keeps the data, delete destroys both.
+
+- Arabic: حذف
