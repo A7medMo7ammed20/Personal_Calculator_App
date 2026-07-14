@@ -45,8 +45,8 @@ class SettingsScreen extends StatelessWidget {
       body: ListenableBuilder(
         listenable: Listenable.merge([
           controller,
-          if (currencyController != null) currencyController!,
-          if (localeController != null) localeController!,
+          ?currencyController,
+          ?localeController,
         ]),
         builder: (context, _) => ListView(
           padding: EdgeInsets.all(context.spacing.lg),
