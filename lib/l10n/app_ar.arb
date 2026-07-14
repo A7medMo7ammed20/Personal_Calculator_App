@@ -66,5 +66,7 @@
   "analysisTitle": "التحليل",
   "analysisEmpty": "لا يوجد نشاط بعملة {currency} بعد",
   "breakdownTitle": "التغيّرات · {interval}",
-  "breakdownEmpty": "لا معاملات في هذه الفترة"
+  "breakdownEmpty": "لا معاملات في هذه الفترة",
+  "chartOverTime": "على مدى الوقت",
+  "chartByContact": "حسب جهة الاتصال"
 }

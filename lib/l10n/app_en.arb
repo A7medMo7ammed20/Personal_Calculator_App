@@ -193,5 +193,9 @@
     "placeholders": { "interval": { "type": "String", "example": "Jul 10, 2026" } }
   },
   "breakdownEmpty": "No entries in this interval",
-  "@breakdownEmpty": { "description": "Shown in the drill-down sheet when the tapped interval is a flat, carried-forward gap with no entries." }
+  "@breakdownEmpty": { "description": "Shown in the drill-down sheet when the tapped interval is a flat, carried-forward gap with no entries." },
+  "chartOverTime": "Over time",
+  "@chartOverTime": { "description": "Analysis chart-type toggle: the cumulative net-balance line over time (#8)." },
+  "chartByContact": "By contact",
+  "@chartByContact": { "description": "Analysis chart-type toggle: the all-time net balance per contact as diverging bars (#8)." }
 }

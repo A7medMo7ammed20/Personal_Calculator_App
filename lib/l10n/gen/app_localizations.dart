@@ -499,6 +499,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No entries in this interval'**
   String get breakdownEmpty;
+
+  /// Analysis chart-type toggle: the cumulative net-balance line over time (#8).
+  ///
+  /// In en, this message translates to:
+  /// **'Over time'**
+  String get chartOverTime;
+
+  /// Analysis chart-type toggle: the all-time net balance per contact as diverging bars (#8).
+  ///
+  /// In en, this message translates to:
+  /// **'By contact'**
+  String get chartByContact;
 }
 
 class _AppLocalizationsDelegate

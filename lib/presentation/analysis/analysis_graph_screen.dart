@@ -6,12 +6,19 @@ import 'package:intl/intl.dart' hide TextDirection;
 import '../../data/contact_repository.dart';
 import '../../data/entry_repository.dart';
 import '../../domain/analysis_graph.dart';
+import '../../domain/balance.dart';
 import '../../domain/currency.dart';
+import '../../domain/entry.dart';
 import '../../domain/period.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../money_format.dart';
 import '../theme/theme_context.dart';
 import '../widgets/period_selector.dart';
+
+/// The two ways to read the same currency lens (#8): the cumulative net-balance
+/// line **over time**, or the all-time net balance **by contact** as diverging
+/// bars. See ADR 0004.
+enum _ChartType { overTime, byContact }
 
 /// The lens + period the graph hands back to home on pop, so home adopts any
 /// change made here. See ADR 0004 (return-on-pop, no lifted controller).
@@ -29,11 +36,31 @@ class AnalysisGraphResult {
   final DateTime? customEnd;
 }
 
-/// The Analysis graph (#8): a per-currency line of the cumulative net [[Balance]]
-/// across all Contacts over time, windowed by the period filter, with tap-to-
-/// drill-down into an interval's per-Contact movement. All logic lives in the
-/// pure `cumulativeSeries` / `intervalBreakdown` seams; this screen loads, hosts
-/// the lens + period controls, and renders. See CONTEXT.md and ADR 0004.
+/// Everything one lens+period load needs to render either chart, fetched
+/// together so toggling chart type is a pure `setState` with no re-query.
+class _AnalysisData {
+  const _AnalysisData({
+    required this.series,
+    required this.bars,
+    required this.names,
+  });
+
+  /// Per-entry cumulative points for the over-time line (windowed by period).
+  final List<BalancePoint> series;
+
+  /// All-time per-contact balances for the by-contact bars (never windowed).
+  final List<ContactBalance> bars;
+
+  /// Contact id → display name, for bar labels and the drill-down sheet.
+  final Map<int, String> names;
+}
+
+/// The Analysis graph (#8): two views on the per-currency net [[Balance]] across
+/// all Contacts — a per-entry cumulative line **over time** (windowed by the
+/// period filter, carrying in the opening balance) and an all-time **by-contact**
+/// diverging bar chart. A segmented toggle switches between them. All maths lives
+/// in the pure `runningBalanceSeries` / `contactBalancesSorted` seams; this screen
+/// loads, hosts the controls, and renders. See CONTEXT.md and ADR 0004.
 class AnalysisGraphScreen extends StatefulWidget {
   const AnalysisGraphScreen({
     super.key,
@@ -61,18 +88,14 @@ class _AnalysisGraphScreenState extends State<AnalysisGraphScreen> {
   late PeriodOption _period = widget.period;
   late DateTime? _customStart = widget.customStart;
   late DateTime? _customEnd = widget.customEnd;
+  _ChartType _chartType = _ChartType.overTime;
 
-  int _firstDayOfWeek = DateTime.monday;
   bool _loaded = false;
-  late Future<List<BalancePoint>> _series;
+  late Future<_AnalysisData> _data;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // MaterialLocalizations reports 0=Sunday..6=Saturday; DateTime uses
-    // 1=Monday..7=Sunday. Honour the locale's week start for weekly buckets.
-    final idx = MaterialLocalizations.of(context).firstDayOfWeekIndex;
-    _firstDayOfWeek = idx == 0 ? DateTime.sunday : idx;
     if (!_loaded) {
       _reload();
       _loaded = true;
@@ -80,11 +103,14 @@ class _AnalysisGraphScreenState extends State<AnalysisGraphScreen> {
   }
 
   void _reload() {
-    _series = _load();
+    _data = _load();
   }
 
-  Future<List<BalancePoint>> _load() async {
+  Future<_AnalysisData> _load() async {
     final entries = await widget.entryRepository.listByCurrency(_currency);
+    final balances = await widget.entryRepository.balancesByCurrency(_currency);
+    final contacts = await widget.contactRepository.list();
+    final names = {for (final c in contacts) c.id!: c.name};
     final now = DateTime.now();
     final range = resolvePeriod(
       _period,
@@ -92,11 +118,10 @@ class _AnalysisGraphScreenState extends State<AnalysisGraphScreen> {
       customStart: _customStart,
       customEnd: _customEnd,
     );
-    return cumulativeSeries(
-      entries,
-      range: range,
-      now: now,
-      firstDayOfWeek: _firstDayOfWeek,
+    return _AnalysisData(
+      series: runningBalanceSeries(entries, range: range),
+      bars: contactBalancesSorted(balances),
+      names: names,
     );
   }
 
@@ -113,6 +138,11 @@ class _AnalysisGraphScreenState extends State<AnalysisGraphScreen> {
       _currency = currency;
       _reload();
     });
+  }
+
+  void _selectChartType(_ChartType type) {
+    if (type == _chartType) return;
+    setState(() => _chartType = type);
   }
 
   Future<void> _selectPeriod(PeriodOption option) async {
@@ -140,23 +170,13 @@ class _AnalysisGraphScreenState extends State<AnalysisGraphScreen> {
     });
   }
 
-  Future<void> _openBreakdown(BalancePoint point) async {
-    final entries = await widget.entryRepository.entriesInRange(
-      _currency,
-      point.bucket,
-    );
-    final deltas = intervalBreakdown(entries);
-    final contacts = await widget.contactRepository.list();
-    final names = {for (final c in contacts) c.id!: c.name};
-    if (!mounted) return;
+  void _openEntryDetail(BalancePoint point, Map<int, String> names) {
     showModalBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => _BreakdownSheet(
-        bucket: point.bucket,
-        deltas: deltas,
-        names: names,
+      builder: (_) => _EntryDetailSheet(
+        entry: point.entry,
+        contactName: names[point.entry.contactId] ?? '#${point.entry.contactId}',
         currency: _currency,
       ),
     );
@@ -165,6 +185,7 @@ class _AnalysisGraphScreenState extends State<AnalysisGraphScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final overTime = _chartType == _ChartType.overTime;
     // Return-on-pop: intercept the pop so home receives the (possibly changed)
     // lens + period. canPop:false lets us pop with a result ourselves.
     return PopScope<Object?>(
@@ -177,7 +198,10 @@ class _AnalysisGraphScreenState extends State<AnalysisGraphScreen> {
         appBar: AppBar(
           title: Text(l10n.analysisTitle),
           actions: [
-            PeriodSelector(period: _period, onSelected: _selectPeriod),
+            // The period only windows the over-time line; the by-contact bars
+            // are all-time, so the chip is hidden there.
+            if (overTime)
+              PeriodSelector(period: _period, onSelected: _selectPeriod),
           ],
         ),
         body: Column(
@@ -194,15 +218,37 @@ class _AnalysisGraphScreenState extends State<AnalysisGraphScreen> {
                 onSelectionChanged: (s) => _selectCurrency(s.first),
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+              child: SegmentedButton<_ChartType>(
+                segments: [
+                  ButtonSegment(
+                    value: _ChartType.overTime,
+                    icon: const Icon(Icons.show_chart),
+                    label: Text(l10n.chartOverTime),
+                  ),
+                  ButtonSegment(
+                    value: _ChartType.byContact,
+                    icon: const Icon(Icons.bar_chart),
+                    label: Text(l10n.chartByContact),
+                  ),
+                ],
+                selected: {_chartType},
+                showSelectedIcon: false,
+                onSelectionChanged: (s) => _selectChartType(s.first),
+              ),
+            ),
             Expanded(
-              child: FutureBuilder<List<BalancePoint>>(
-                future: _series,
+              child: FutureBuilder<_AnalysisData>(
+                future: _data,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  final points = snapshot.data ?? const <BalancePoint>[];
-                  if (points.isEmpty) {
+                  final data = snapshot.data;
+                  final hasData = data != null &&
+                      (overTime ? data.series.isNotEmpty : data.bars.isNotEmpty);
+                  if (!hasData) {
                     return Center(
                       child: Text(
                         l10n.analysisEmpty(_currency.code),
@@ -210,13 +256,20 @@ class _AnalysisGraphScreenState extends State<AnalysisGraphScreen> {
                       ),
                     );
                   }
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                    child: _AnalysisChart(
-                      points: points,
-                      currency: _currency,
-                      onTapPoint: _openBreakdown,
-                    ),
+                  if (overTime) {
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                      child: _OverTimeChart(
+                        points: data.series,
+                        currency: _currency,
+                        onTapPoint: (p) => _openEntryDetail(p, data.names),
+                      ),
+                    );
+                  }
+                  return _ByContactChart(
+                    bars: data.bars,
+                    names: data.names,
+                    currency: _currency,
                   );
                 },
               ),
@@ -228,10 +281,10 @@ class _AnalysisGraphScreenState extends State<AnalysisGraphScreen> {
   }
 }
 
-/// The windowed line, hand-painted (ADR 0004 — no charting dependency). Owns the
-/// x-scale so tap hit-testing is a straight nearest-point search.
-class _AnalysisChart extends StatelessWidget {
-  const _AnalysisChart({
+/// The windowed per-entry line, hand-painted (ADR 0004 — no charting dependency).
+/// Owns the x-scale so tap hit-testing is a straight nearest-point search.
+class _OverTimeChart extends StatelessWidget {
+  const _OverTimeChart({
     required this.points,
     required this.currency,
     required this.onTapPoint,
@@ -280,8 +333,9 @@ class _AnalysisChart extends StatelessWidget {
 }
 
 /// Pure layout: maps [points] to screen [offsets] within a plot rect, honouring
-/// RTL (oldest on the right). Shared by the painter and the tap hit-test so they
-/// never disagree.
+/// RTL (oldest on the right). Points are spaced evenly **by index** so a cluster
+/// of same-timestamp entries never overlaps. Shared by the painter and the tap
+/// hit-test so they never disagree.
 class _ChartGeometry {
   _ChartGeometry({
     required this.size,
@@ -425,9 +479,9 @@ class _LinePainter extends CustomPainter {
     _paintLabel(canvas, _money(geometry.minY),
         Offset(plot.left, plot.bottom - 14), align: _Align.start);
 
-    // X extents: first and last bucket dates in the strip below the plot.
-    final first = geometry.points.first.bucket.start;
-    final last = geometry.points.last.bucket.start;
+    // X extents: first and last entry dates in the strip below the plot.
+    final first = geometry.points.first.entry.createdAt;
+    final last = geometry.points.last.entry.createdAt;
     final leftLabel = geometry.isRtl ? _date(last) : _date(first);
     final rightLabel = geometry.isRtl ? _date(first) : _date(last);
     final dateY = size.height - 14;
@@ -459,96 +513,208 @@ class _LinePainter extends CustomPainter {
 
 enum _Align { start, end }
 
-/// The drill-down sheet: an interval's per-Contact net deltas, styled like the
-/// running-summary sheet. Deltas are pre-sorted by magnitude and sum to the
-/// segment's movement (#8).
-class _BreakdownSheet extends StatelessWidget {
-  const _BreakdownSheet({
-    required this.bucket,
-    required this.deltas,
+/// The all-time by-contact view: one diverging bar per contact around a centre
+/// zero line — green growing toward owed-to-me, red toward owed-by-me — sorted by
+/// magnitude. Built from plain widgets (no charting dependency; ADR 0004) so
+/// labels, RTL, and hit-testing come for free.
+class _ByContactChart extends StatelessWidget {
+  const _ByContactChart({
+    required this.bars,
     required this.names,
     required this.currency,
   });
 
-  final DateRange bucket;
-  final List<ContactDelta> deltas;
+  final List<ContactBalance> bars;
   final Map<int, String> names;
   final Currency currency;
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final locale = Localizations.localeOf(context).toString();
-    final theme = Theme.of(context);
+    final maxMagnitude = bars.fold<double>(
+      0,
+      (m, b) => math.max(m, b.balance.magnitude),
+    );
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      itemCount: bars.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 16),
+      itemBuilder: (context, index) {
+        final bar = bars[index];
+        return _ContactBar(
+          name: names[bar.contactId] ?? '#${bar.contactId}',
+          balance: bar.balance,
+          fraction: maxMagnitude == 0 ? 0 : bar.balance.magnitude / maxMagnitude,
+          currency: currency,
+        );
+      },
+    );
+  }
+}
 
-    return SafeArea(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.75,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+/// A single diverging bar: the contact name and signed amount above, a track
+/// split at the centre with the bar growing right (owed-to-me, green) or left
+/// (owed-by-me, red) proportionally to [fraction] of the largest balance.
+class _ContactBar extends StatelessWidget {
+  const _ContactBar({
+    required this.name,
+    required this.balance,
+    required this.fraction,
+    required this.currency,
+  });
+
+  final String name;
+  final Balance balance;
+  final double fraction;
+  final Currency currency;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final semantics = context.semanticColors;
+    final toMe = balance.signed > 0;
+    final color = toMe ? semantics.owedToMe : semantics.owedByMe;
+    final sign = toMe ? '+' : '−';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            Expanded(
               child: Text(
-                l10n.breakdownTitle(_intervalLabel(locale)),
-                style: theme.textTheme.titleMedium,
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium,
               ),
             ),
-            const Divider(height: 1),
-            if (deltas.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  l10n.breakdownEmpty,
-                  style: theme.textTheme.bodyMedium,
-                ),
-              )
-            else
-              Flexible(
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: deltas.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (context, index) => _deltaTile(context, deltas[index]),
-                ),
+            const SizedBox(width: 8),
+            Text(
+              '$sign${formatMoney(balance.magnitude, currency)}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w600,
               ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final half = constraints.maxWidth / 2;
+            final barWidth = (half * fraction).clamp(2.0, half);
+            return SizedBox(
+              height: 12,
+              child: Stack(
+                children: [
+                  // Centre zero divider.
+                  Positioned(
+                    left: half - 0.5,
+                    top: 0,
+                    bottom: 0,
+                    width: 1,
+                    child: ColoredBox(color: theme.colorScheme.outlineVariant),
+                  ),
+                  Positioned(
+                    left: toMe ? half : half - barWidth,
+                    width: barWidth,
+                    top: 0,
+                    bottom: 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// The over-time drill-down: the tapped entry's contact, signed amount, date, and
+/// note — who moved the line here, and which way (#8).
+class _EntryDetailSheet extends StatelessWidget {
+  const _EntryDetailSheet({
+    required this.entry,
+    required this.contactName,
+    required this.currency,
+  });
+
+  final Entry entry;
+  final String contactName;
+  final Currency currency;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final semantics = context.semanticColors;
+    final locale = Localizations.localeOf(context).toString();
+    final toMe = entry.direction == Direction.owedToMe;
+    final entryColor = toMe ? semantics.owedToMe : semantics.owedByMe;
+    final entrySign = toMe ? '+' : '−';
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(contactName, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              DateFormat.yMMMd(locale).add_jm().format(entry.createdAt),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _detailRow(
+              context,
+              label: toMe
+                  ? AppLocalizations.of(context).directionOwedToMe
+                  : AppLocalizations.of(context).directionOwedByMe,
+              value: '$entrySign${formatMoney(entry.amount, currency)}',
+              color: entryColor,
+            ),
+            if (entry.description != null && entry.description!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(entry.description!, style: theme.textTheme.bodyMedium),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _deltaTile(BuildContext context, ContactDelta d) {
-    final semantics = context.semanticColors;
-    final settled = d.delta.abs() < 0.005;
-    final toMe = d.delta > 0;
-    final color = settled
-        ? semantics.settled
-        : (toMe ? semantics.owedToMe : semantics.owedByMe);
-    final sign = settled ? '' : (toMe ? '+' : '−');
-    return ListTile(
-      dense: true,
-      title: Text(names[d.contactId] ?? '#${d.contactId}'),
-      trailing: Text(
-        '$sign${formatMoney(d.delta.abs(), currency)}',
-        style: Theme.of(context)
-            .textTheme
-            .bodyMedium
-            ?.copyWith(color: color, fontWeight: FontWeight.w600),
-      ),
+  Widget _detailRow(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium
+              ?.copyWith(color: color, fontWeight: FontWeight.w600),
+        ),
+      ],
     );
-  }
-
-  String _intervalLabel(String locale) {
-    final fmt = DateFormat.yMMMd(locale);
-    final lastDay = bucket.endExclusive.subtract(const Duration(days: 1));
-    final start = fmt.format(bucket.start);
-    final sameDay = bucket.start.year == lastDay.year &&
-        bucket.start.month == lastDay.month &&
-        bucket.start.day == lastDay.day;
-    return sameDay ? start : '$start – ${fmt.format(lastDay)}';
   }
 }

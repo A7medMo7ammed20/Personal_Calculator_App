@@ -230,4 +230,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get breakdownEmpty => 'لا معاملات في هذه الفترة';
+
+  @override
+  String get chartOverTime => 'على مدى الوقت';
+
+  @override
+  String get chartByContact => 'حسب جهة الاتصال';
 }

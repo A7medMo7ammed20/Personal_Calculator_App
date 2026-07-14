@@ -78,13 +78,13 @@ this concept restricted to a time window.
 - Arabic: النشاط
 
 ### Analysis graph
-A per-currency (following the global currency lens) chart of the **cumulative net balance over time** — the running total position across all Contacts. Rising = net owed-to-me increasing; falling = repayments or new owed-by-me. Never mixes currencies into one line.
+A per-currency (following the global currency lens) analysis of the net [[Balance]] across all Contacts, with a **chart-type toggle** between two views. Never mixes currencies into one chart.
 
-It is a **view onto the real all-time running [[Balance]], windowed only in X**: under a bounded [[Period filter]] the line **carries in the opening balance** from before the window (July starts at June's closing position, not at zero) — the balance is never *recomputed* over the window, only *clipped* in view. At **All time** the X axis spans first-entry-date → today. A currency with no entries shows a calm per-lens empty state.
+**Over time** — a line of the **cumulative net balance over time**. Rising = net owed-to-me increasing; falling = repayments or new owed-by-me. It is a **view onto the real all-time running [[Balance]], windowed only in X**: under a bounded [[Period filter]] the line **carries in the opening balance** from before the window (July starts at June's closing position, not at zero) — the balance is never *recomputed* over the window, only *clipped* in view. At **All time** the X axis spans first-entry-date → today. It plots **one vertex per Entry** (evenly spaced by index, so same-day entries never collapse to a single dot — the failure that a calendar-bucket line hit on this app's dense same-day data). **Drill-down:** tapping a vertex opens that Entry's contact, signed amount, date, and note — who moved the line here, and which way.
 
-Points are **adaptive calendar buckets** whose granularity follows the visible span (daily for month-scale, weekly for quarter/year-scale, monthly for multi-year); empty buckets **carry the balance forward** (a flat segment, never a drop to zero). **Drill-down:** tapping a point lists that interval's entries as a **per-Contact net delta** (green/red, sorted by magnitude), and the deltas sum to the segment's rise/fall — answering *who moved the line, and which way*.
+**By contact** — a **diverging horizontal bar** per Contact of their **all-time net balance** (green toward owed-to-me, red toward owed-by-me, sorted by magnitude). Being a snapshot it is immune to same-day clustering. Because a [[Balance]] is all-time and **never windowed**, the period chip is hidden on this view. (Pie/donut was rejected — a slice can't carry debt *direction*.)
 
-The graph is a **global (all-Contacts) destination** reached from the home overflow (⋮), not a per-Contact view (see [ADR 0004](docs/adr/0004-analysis-graph-rendering-and-windowing.md); this revises [ADR 0003](docs/adr/0003-bottom-tab-currency-lens.md)). Optional secondary flow-bars view is deferred.
+A currency with no entries (or, on the bars, no unsettled contacts) shows a calm per-lens empty state. The graph is a **global (all-Contacts) destination** reached from the home overflow (⋮), not a per-Contact view (see [ADR 0004](docs/adr/0004-analysis-graph-rendering-and-windowing.md), amended 2026-07-14; this revises [ADR 0003](docs/adr/0003-bottom-tab-currency-lens.md)).
 
 ### Balance
 The running total for one Contact in one currency — the sum of all signed Entry amounts (repayment is just an opposite-direction Entry; there is no separate settle concept).

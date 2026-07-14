@@ -228,4 +228,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get breakdownEmpty => 'No entries in this interval';
+
+  @override
+  String get chartOverTime => 'Over time';
+
+  @override
+  String get chartByContact => 'By contact';
 }

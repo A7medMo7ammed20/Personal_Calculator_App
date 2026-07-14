@@ -5,6 +5,8 @@ Date: 2026-07-13
 ## Status
 
 Accepted. Revises the placement clause of [ADR 0003](0003-bottom-tab-currency-lens.md).
+Amended 2026-07-14 — the point/drill-down decisions below are superseded by the
+**Amendment** at the end (per-entry line + by-contact bars).
 
 ## Context
 
@@ -68,3 +70,58 @@ interval's entries by Contact. Several decisions had genuine alternatives:
 - **Negative:** Lens/period sync is "on return," not live-simultaneous. Acceptable since
   only one screen is visible at a time; if a lifted lens controller is later introduced,
   this screen adopts it with no semantic change.
+
+## Amendment — 2026-07-14: per-entry line + a by-contact bar view
+
+### Context
+
+On-device with real seed data the shipped line looked **empty**. The cause: this
+ledger's data clusters on ~1 calendar day, and a **daily-bucket** point plots one vertex
+per calendar day — so eleven same-day entries collapsed into a single dot with nothing to
+draw between. Calendar bucketing optimises for a shape (activity spread over weeks/months)
+this app rarely has. The user asked to **switch between chart types** and to pick the ones
+that suit this project.
+
+### Decision (supersedes the "Points" and "Drill-down" bullets above)
+
+- **Over-time line — one vertex per Entry, not per calendar bucket.** The series steps at
+  every Entry (evenly spaced **by index**, so a same-timestamp cluster never overlaps),
+  which is always visible regardless of how the dates bunch up. Carry-in is unchanged and
+  now *inherent*: it reuses the existing `runningSummary` seam (ascending cumulative
+  balance per Entry) and, under a bounded period, simply **filters** the points to the
+  window — the running total already carried the opening balance in. `BucketGranularity`,
+  `bucketGranularityForSpanDays`, and `cumulativeSeries` are removed in favour of a small
+  `runningBalanceSeries(entries, {range})`.
+- **A second view — by-contact diverging bars.** A horizontal bar per Contact of their
+  **all-time net [[Balance]]** (green = owed-to-me to one side of a centre zero line,
+  red = owed-by-me to the other), sorted by magnitude. Being a **snapshot**, it is immune
+  to the same-day-clustering problem the line suffers. It reads the existing
+  `EntryRepository.balancesByCurrency` through a pure `contactBalancesSorted` seam
+  (settled contacts dropped, sorted by magnitude then contact id). Because a Balance is
+  **all-time and never windowed** (CONTEXT.md's golden rule), the period chip is **hidden**
+  on this view.
+- **Chart-type toggle.** A segmented control at the top of the screen switches
+  over-time ↔ by-contact, alongside the currency segmented toggle.
+- **Pie/donut rejected.** A pie can't encode debt **direction** (a slice has no sign), and
+  bars compare magnitudes across contacts far better. Diverging bars keep the green/red
+  direction language the rest of the app uses.
+- **Rendering — the line stays a bespoke `CustomPainter`; the bars are plain widgets.**
+  Still **no charting dependency** (the ADR's core constraint holds). The bars are built
+  from `Stack`/`Positioned`/`DecoratedBox` rather than a painter so contact labels, RTL,
+  and per-bar hit-testing come for free — a painter would re-implement all three.
+- **Drill-down — simplified to the tapped Entry.** Tapping a line vertex opens a sheet with
+  that Entry's contact, signed amount, date, and note — replacing the interval-breakdown
+  sheet. `intervalBreakdown` / `ContactDelta` and the breakdown use of `entriesInRange` are
+  removed.
+
+### Consequences
+
+- **Positive:** The line is robust to this app's real data shape (dense same-day activity)
+  — the original AC "the line is always visible" now holds by construction.
+- **Positive:** Two complementary questions answered — *how did my position move over time?*
+  (line) and *who am I most exposed to right now?* (bars) — with one lens and one toggle.
+- **Positive:** Both remain **pure seams** (`runningBalanceSeries`, `contactBalancesSorted`)
+  over `runningSummary` / `balancesByCurrency`, unit-tested without DB or UI.
+- **Neutral:** We lose calendar-aligned x-spacing; the line is now ordinal (by entry index),
+  not strictly time-proportional. Accepted — for this data an always-legible ordinal line
+  beats a time-accurate one that renders as a dot. End-date labels still show real dates.

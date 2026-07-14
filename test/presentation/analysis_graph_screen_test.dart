@@ -7,6 +7,7 @@ import 'package:debt_ledger/domain/entry.dart';
 import 'package:debt_ledger/domain/period.dart';
 import 'package:debt_ledger/l10n/gen/app_localizations.dart';
 import 'package:debt_ledger/presentation/analysis/analysis_graph_screen.dart';
+import 'package:debt_ledger/presentation/widgets/period_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -92,5 +93,59 @@ void main() {
     await tester.tap(find.text('YER'));
     await tester.pumpAndSettle();
     expect(find.text(l10n.analysisEmpty('YER')), findsOneWidget);
+  });
+
+  testWidgets('the by-contact view renders a labelled bar per unsettled contact',
+      (tester) async {
+    final ali = await contacts.add(const Contact(name: 'Ali'));
+    final sara = await contacts.add(const Contact(name: 'Sara'));
+    await entries.add(Entry(
+      contactId: ali.id!, amount: 1000, direction: Direction.owedToMe,
+      currency: Currency.sar, createdAt: DateTime(2026, 5, 10),
+    ));
+    await entries.add(Entry(
+      contactId: sara.id!, amount: 400, direction: Direction.owedByMe,
+      currency: Currency.sar, createdAt: DateTime(2026, 5, 12),
+    ));
+
+    await tester.pumpWidget(_wrap(screen()));
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    // The names aren't on the over-time line...
+    expect(find.text('Ali'), findsNothing);
+
+    await tester.tap(find.text(l10n.chartByContact));
+    await tester.pumpAndSettle();
+
+    // ...but the by-contact bars label each contact.
+    expect(find.text('Ali'), findsOneWidget);
+    expect(find.text('Sara'), findsOneWidget);
+  });
+
+  testWidgets('the period chip is hidden on the by-contact view (balances are all-time)',
+      (tester) async {
+    final a = await contacts.add(const Contact(name: 'Ahmed'));
+    await entries.add(Entry(
+      contactId: a.id!, amount: 1000, direction: Direction.owedToMe,
+      currency: Currency.sar, createdAt: DateTime(2026, 5, 10),
+    ));
+
+    await tester.pumpWidget(_wrap(screen()));
+    await tester.pumpAndSettle();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    // Over-time view shows the period selector.
+    expect(find.byType(PeriodSelector), findsOneWidget);
+
+    await tester.tap(find.text(l10n.chartByContact));
+    await tester.pumpAndSettle();
+    // By-contact is a snapshot — the period chip is gone.
+    expect(find.byType(PeriodSelector), findsNothing);
+
+    // Toggling back restores it.
+    await tester.tap(find.text(l10n.chartOverTime));
+    await tester.pumpAndSettle();
+    expect(find.byType(PeriodSelector), findsOneWidget);
   });
 }
