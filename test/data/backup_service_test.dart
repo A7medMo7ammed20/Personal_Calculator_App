@@ -153,4 +153,30 @@ void main() {
     // Live data survived — the file was refused before any swap.
     expect((await (await b.open()).query('contacts')).single['name'], 'Keep me');
   });
+
+  test('restore refuses a backup from a newer app version', () async {
+    // A valid-looking Daftar db but with user_version one past ours.
+    final newerPath = p.join(tmp.path, 'newer.db');
+    final newer = await databaseFactoryFfi.openDatabase(
+      newerPath,
+      options: OpenDatabaseOptions(
+        version: AppDatabase.schemaVersion + 1,
+        onCreate: (db, _) async {
+          await db.execute('CREATE TABLE contacts (id INTEGER PRIMARY KEY, name TEXT)');
+          await db.execute('CREATE TABLE entries (id INTEGER PRIMARY KEY)');
+          await db.execute('CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT)');
+        },
+      ),
+    );
+    await newer.close();
+
+    final b = dbAt('b.db');
+    addTearDown(b.close);
+    await (await b.open()).insert('contacts', {'name': 'Keep me'});
+
+    final result = await serviceFor(b).restore(File(newerPath));
+
+    expect(result, RestoreResult.newerVersion);
+    expect((await (await b.open()).query('contacts')).single['name'], 'Keep me');
+  });
 }
