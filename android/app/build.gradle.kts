@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "cloud.smapp.debt_ledger"
-    compileSdk = flutter.compileSdkVersion
+    // file_picker/share_plus pull in flutter_plugin_android_lifecycle, which
+    // requires compileSdk 36; override Flutter's default (34) to match (#26).
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
