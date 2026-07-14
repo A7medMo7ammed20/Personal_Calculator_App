@@ -1,7 +1,14 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
+import 'package:share_plus/share_plus.dart';
 
 import 'app.dart';
 import 'data/app_database.dart';
+import 'data/backup_dirty_flag.dart';
+import 'data/backup_service.dart';
 import 'data/contact_repository.dart';
 import 'data/entry_repository.dart';
 import 'data/profile_repository.dart';
@@ -14,11 +21,15 @@ import 'presentation/theme/theme_controller.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final appDatabase = AppDatabase();
-  final settingsRepository = SettingsRepository(appDatabase);
-  final contactRepository = ContactRepository(appDatabase);
-  final entryRepository = EntryRepository(appDatabase);
+  // One dirty flag shared by every write path, so auto-backup can skip when
+  // nothing changed since the last snapshot (#26, ADR 0010).
+  final dirtyFlag = BackupDirtyFlag();
+  final settingsRepository = SettingsRepository(appDatabase, dirty: dirtyFlag);
+  final contactRepository = ContactRepository(appDatabase, dirty: dirtyFlag);
+  final entryRepository = EntryRepository(appDatabase, dirty: dirtyFlag);
   final themeController = ThemeController(settingsRepository);
-  final profileController = ProfileController(ProfileRepository(appDatabase));
+  final profileController =
+      ProfileController(ProfileRepository(appDatabase, dirty: dirtyFlag));
   final currencyController = CurrencyController(settingsRepository);
   final localeController = LocaleController(settingsRepository);
   // Load every persisted preference before the first frame so the app opens in
@@ -27,6 +38,14 @@ Future<void> main() async {
   await profileController.load();
   await currencyController.load();
   await localeController.load();
+
+  // App-private backups directory (a sibling of the database file — no
+  // path_provider needed, and it stays inside the app sandbox).
+  final backupsDir = Directory(
+      p.join(await appDatabase.factory.getDatabasesPath(), 'backups'));
+  final backupService =
+      BackupService(appDatabase: appDatabase, backupsDir: backupsDir);
+
   runApp(DebtLedgerApp(
     appDatabase: appDatabase,
     contactRepository: contactRepository,
@@ -35,5 +54,14 @@ Future<void> main() async {
     profileController: profileController,
     currencyController: currencyController,
     localeController: localeController,
+    backupService: backupService,
+    dirtyFlag: dirtyFlag,
+    onShareBackup: (file) =>
+        SharePlus.instance.share(ShareParams(files: [XFile(file.path)])),
+    onPickBackupFile: () async {
+      final result = await FilePicker.platform.pickFiles();
+      final path = result?.files.single.path;
+      return path == null ? null : File(path);
+    },
   ));
 }

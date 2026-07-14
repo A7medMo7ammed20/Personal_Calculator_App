@@ -22,6 +22,7 @@ import '../entries/add_transaction_screen.dart';
 import '../locale/locale_controller.dart';
 import '../money_format.dart';
 import '../profile/profile_controller.dart';
+import '../settings/backup_restore_section.dart';
 import '../settings/settings_screen.dart';
 import '../theme/theme_context.dart';
 import '../theme/theme_controller.dart';
@@ -45,6 +46,7 @@ class HomeScreen extends StatefulWidget {
     this.profileController,
     this.localeController,
     this.onEraseAllData,
+    this.backup,
   });
 
   final ContactRepository repository;
@@ -73,6 +75,9 @@ class HomeScreen extends StatefulWidget {
   /// app wires it to wipe the DB and reload every controller to first-run; null
   /// in focused tests, which then hide the Data section.
   final Future<void> Function()? onEraseAllData;
+
+  /// Backup & restore config (#26), threaded to Settings. Null in focused tests.
+  final BackupSectionConfig? backup;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -235,6 +240,7 @@ class _HomeScreenState extends State<HomeScreen> {
               currencyController: widget.currencyController,
               localeController: widget.localeController,
               onEraseAllData: widget.onEraseAllData,
+              backup: widget.backup,
             ),
           ),
         );

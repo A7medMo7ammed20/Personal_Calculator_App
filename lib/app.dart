@@ -14,6 +14,7 @@ import 'presentation/currency/currency_controller.dart';
 import 'presentation/home/home_screen.dart';
 import 'presentation/locale/locale_controller.dart';
 import 'presentation/profile/profile_controller.dart';
+import 'presentation/settings/backup_restore_section.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/theme/theme_controller.dart';
 
@@ -78,6 +79,32 @@ class _DebtLedgerAppState extends State<DebtLedgerApp> {
   Future<void> _eraseAllData() async {
     await widget.appDatabase.eraseAll();
     await _reloadApp();
+  }
+
+  /// A root-messenger snackbar (keyed off [_messengerKey]) so a Restore's
+  /// success/failure message survives the key-bump remount in [_reloadApp].
+  void _showMessage(String message) {
+    _messengerKey.currentState
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// Builds the Settings Backup section config only when the app was wired with
+  /// a [BackupService] + platform seams (the real app always is; focused tests
+  /// leave them null, which hides the section). A successful restore routes
+  /// through [_reloadApp] so the swapped-in data appears immediately (#26).
+  BackupSectionConfig? get _backupConfig {
+    final service = widget.backupService;
+    final share = widget.onShareBackup;
+    final pick = widget.onPickBackupFile;
+    if (service == null || share == null || pick == null) return null;
+    return BackupSectionConfig(
+      service: service,
+      onShare: share,
+      onPickFile: pick,
+      onRestored: _reloadApp,
+      showMessage: _showMessage,
+    );
   }
 
   @override
@@ -149,5 +176,6 @@ class _DebtLedgerAppState extends State<DebtLedgerApp> {
         profileController: widget.profileController,
         localeController: widget.localeController,
         onEraseAllData: _eraseAllData,
+        backup: _backupConfig,
       );
 }
