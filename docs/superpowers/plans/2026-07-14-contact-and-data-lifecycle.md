@@ -422,7 +422,14 @@ void main() {
     expect(settle.currency, Currency.sar);
     expect(settle.createdAt, when);
     expect(settle.description, 'تسوية');
-    expect(balanceOf([const Entry(contactId: 7, amount: 300, direction: Direction.owedToMe, currency: Currency.sar, createdAt: DateTimeStub.epoch), settle]).isSettled, isTrue);
+    final history = Entry(
+      contactId: 7,
+      amount: 300,
+      direction: Direction.owedToMe,
+      currency: Currency.sar,
+      createdAt: DateTime(2026, 1, 1),
+    );
+    expect(balanceOf([history, settle]).isSettled, isTrue);
   });
 
   test('owed-by-me balance settles with an owed-to-me entry', () {
@@ -442,7 +449,6 @@ void main() {
   });
 }
 ```
-Replace the inline `DateTimeStub.epoch` with a literal `DateTime(2026, 1, 1)` — the balance-settles assertion only needs any timestamp. (Final test: use `createdAt: DateTime(2026, 1, 1)` in the history entry.)
 
 - [ ] **Step 2: Run — expect FAIL** (`settle.dart` missing). Run: `flutter test test/domain/settle_test.dart`
 - [ ] **Step 3: Implement.**
@@ -529,7 +535,7 @@ void main() {
 
   testWidgets('reset settles the balance by adding one settle entry', (tester) async {
     const c = Contact(id: 1, name: 'Ali');
-    await entries.add(const Entry(contactId: 1, amount: 300, direction: Direction.owedToMe, currency: Currency.sar, createdAt: _t));
+    await entries.add(Entry(contactId: 1, amount: 300, direction: Direction.owedToMe, currency: Currency.sar, createdAt: DateTime(2026, 7, 1)));
     await tester.pumpWidget(host(c));
     await tester.pumpAndSettle();
 
@@ -556,10 +562,7 @@ void main() {
     expect(item.enabled, isFalse);
   });
 }
-
-const _t = DateTimeConst();
 ```
-Replace `_t`/`DateTimeConst()` with a real `DateTime(2026, 7, 1)` constant expression: declare `final _t = DateTime(2026, 7, 1);` outside `main` and drop the `const` on the entry (use a non-const `Entry(...)`).
 
 - [ ] **Step 2: Run — expect FAIL** (no overflow menu). Run: `flutter test test/presentation/contact_reset_test.dart`
 - [ ] **Step 3: Implement.** In `contact_screen.dart`:
@@ -650,6 +653,7 @@ class EntryFields extends StatelessWidget {
     required this.when,
     required this.onPickDateTime,
     this.amountAutofocus = true,
+    this.requireAmount = true, // false lets an empty amount validate (add-contact opening entry)
   });
   final TextEditingController amountController;
   final TextEditingController descriptionController;
@@ -658,15 +662,22 @@ class EntryFields extends StatelessWidget {
   final DateTime when;
   final VoidCallback onPickDateTime;
   final bool amountAutofocus;
-  // …build() = the amount TextFormField + SegmentedButton<Direction> +
-  //   date OutlinedButton + description TextFormField, lifted verbatim from
-  //   AddEntryScreen (same validators, keys, formatters, labels).
+  final bool requireAmount;
+  // …build() = the amount TextFormField (key: Key('entry-amount')) +
+  //   SegmentedButton<Direction> + date OutlinedButton + description
+  //   TextFormField, lifted verbatim from AddEntryScreen (same validators,
+  //   keys, formatters, labels). When requireAmount == false, an empty amount
+  //   returns null from the validator (still rejects a non-empty invalid value).
 }
+
+// Shared helpers, also top-level in entry_fields.dart, so no screen copies them:
+DateTime nowToMinute();                                    // now truncated to the minute
+Future<DateTime?> pickEntryDateTime(BuildContext, DateTime); // date+time picker, returns picked or null
 ```
 
 - [ ] **Step 1: Run existing entry tests to capture green baseline.** Run: `flutter test test/presentation/add_entry_screen_test.dart`. Expected: PASS.
-- [ ] **Step 2: Create `entry_fields.dart`** by lifting the four field widgets out of `AddEntryScreen.build` verbatim (amount `TextFormField` with its validator + `inputFormatters`, the `SegmentedButton<Direction>` with its style, the date `OutlinedButton.icon`, the description `TextFormField`). The amount validator uses `l10n.amountRequired`/`amountInvalid`; the date label uses `DateFormat.yMMMd(locale).add_jm().format(when)`.
-- [ ] **Step 3: Rewrite `AddEntryScreen.build`** to own the state (`_amountController`, `_descriptionController`, `_direction`, `_when`, `_pickDateTime`, `_save` unchanged) and render `EntryFields(...)` inside its `Form`, followed by the existing Save `FilledButton`. No behavior change.
+- [ ] **Step 2: Create `entry_fields.dart`** by lifting the four field widgets out of `AddEntryScreen.build` verbatim (amount `TextFormField` — add `key: const Key('entry-amount')` — with its validator + `inputFormatters`, the `SegmentedButton<Direction>` with its style, the date `OutlinedButton.icon`, the description `TextFormField`). The amount validator uses `l10n.amountRequired`/`amountInvalid`, guarded by `requireAmount` (empty + `!requireAmount` → valid). The date label uses `DateFormat.yMMMd(locale).add_jm().format(when)`. **Also lift** `AddEntryScreen`'s `_nowToMinute` and `_pickDateTime` into `entry_fields.dart` as the top-level `nowToMinute()` and `pickEntryDateTime(context, current)` (returns the picked `DateTime?`), so Tasks 8–9 reuse them instead of copying.
+- [ ] **Step 3: Rewrite `AddEntryScreen.build`** to own the state (`_amountController`, `_descriptionController`, `_direction`, `_when`, `_save` unchanged) and render `EntryFields(...)` inside its `Form`, followed by the existing Save `FilledButton`. Replace its private `_nowToMinute()`/`_pickDateTime()` with the shared `nowToMinute()`/`pickEntryDateTime(...)`. No behavior change.
 - [ ] **Step 4: Run — expect PASS (unchanged behavior).** Run: `flutter test test/presentation/add_entry_screen_test.dart`
 - [ ] **Step 5: Analyze + commit.**
 
@@ -759,7 +770,7 @@ Give the amount field in `EntryFields` a `key: const Key('entry-amount')` (add t
   - `initState` loads `_all = await contactRepository.list()`, holds `Contact? _selected`, `_query`, and `EntryFields` state (`_amountController`, `_descriptionController`, `_direction = Direction.owedToMe`, `_when = now-to-minute`).
   - Renders a search `TextField` (`key: Key('tx-contact-search')`). When `_selected == null`: show a filtered list `filterContacts(_all, _query)` as tappable `ListTile`s; when the query is non-empty and no contact matches, show a create tile `ListTile(key: Key('tx-create-contact'), leading: Icon(Icons.person_add), title: Text(l10n.quickAddCreateContact(_query)))` that pushes `AddContactScreen(repository: contactRepository)` and on non-null return sets `_selected` + refreshes `_all`. When `_selected != null`: show a compact selected row with a change/clear affordance.
   - Below: `EntryFields(...)` wired to the state; a Save `FilledButton(key: Key('tx-save'))` that validates the form **and** `_selected != null` (otherwise show `l10n.contactRequired` via a `SnackBar` or inline error), then `entryRepository.add(Entry(contactId: _selected!.id!, amount: …, direction: _direction, currency: widget.currency, createdAt: _when, description: …))` and pops the saved entry.
-  - Reuse the `_nowToMinute` / `_pickDateTime` helpers (copy from `AddEntryScreen`).
+  - Use the shared `nowToMinute()` for `_when`'s seed and `pickEntryDateTime(context, _when)` for the date picker (from `entry_fields.dart`) — do **not** copy them.
 
 - [ ] **Step 4: Run — expect PASS.** Run: `flutter test test/presentation/add_transaction_screen_test.dart`
 - [ ] **Step 5: Analyze + commit.**
@@ -866,8 +877,9 @@ Future<void> _addTransaction() async {
 }
 ```
 Wire `_addContact` to pass the first-entry params too (so "Add جهة اتصال" can book an opening معاملة): update the existing `_addContact` to `AddContactScreen(repository: widget.repository, entryRepository: widget.entryRepository, currency: _currency)`. Import `AddTransactionScreen` and `domain/entry.dart`.
+  - **Expected test churn:** any existing test (in `home_screen_test.dart` or siblings) that taps the old add FAB directly (`Icons.person_add` / `find.byType(FloatingActionButton)` → add-contact) must now open the speed-dial first (`tap(Key('home-speed-dial'))` → `tap(Key('quick-add-contact'))`). Update those interactions; the assertions they make afterward should stand unchanged.
 
-- [ ] **Step 4: Run — expect PASS** (new + `home_screen_test.dart`). Run: `flutter test test/presentation/home_quick_add_test.dart test/presentation/home_screen_test.dart`
+- [ ] **Step 4: Run — expect PASS** (new + `home_screen_test.dart`, with the interactions updated). Run: `flutter test test/presentation/home_quick_add_test.dart test/presentation/home_screen_test.dart`
 - [ ] **Step 5: Analyze + commit.**
 
 ```bash
@@ -924,8 +936,12 @@ test('v5 fresh install has the archived column defaulting to 0', () async {
 });
 
 test('upgrading from v4 adds archived defaulting to 0', () async {
-  // Open at v4 by inserting a contact through a v4-shaped db, then reopen at 5.
-  final path = inMemoryDatabasePath;
+  // A real temp file — `:memory:` opens a fresh DB each time, so the v4 write
+  // must persist to disk for the v5 reopen to migrate it.
+  final dir = await Directory.systemTemp.createTemp('daftar_v4_');
+  final path = p.join(dir.path, 'legacy.db');
+  addTearDown(() => dir.delete(recursive: true));
+
   final v4 = await databaseFactoryFfi.openDatabase(path, options: OpenDatabaseOptions(
     version: 4,
     onCreate: (db, _) async {
@@ -934,14 +950,16 @@ test('upgrading from v4 adds archived defaulting to 0', () async {
   ));
   await v4.insert('contacts', {'name': 'Legacy'});
   await v4.close();
+
   final appDb = AppDatabase(factory: databaseFactoryFfi, path: path);
   addTearDown(appDb.close);
   final db = await appDb.open();
-  final row = (await db.query('contacts', where: "name = ?", whereArgs: ['Legacy'])).single;
+  final row = (await db.query('contacts', where: 'name = ?', whereArgs: ['Legacy'])).single;
   expect(row['archived'], 0);
+  expect(await db.getVersion(), 5);
 });
 ```
-NOTE: `inMemoryDatabasePath` is a shared in-memory handle; if the two-open trick proves flaky in-memory, use a temp file path via `sqflite_common_ffi`'s factory (`(await appDb) ` — or write to a `Directory.systemTemp` file and delete in tearDown). Keep whichever is green.
+Add imports to the test file: `import 'dart:io';` and `import 'package:path/path.dart' as p;`.
 
 - [ ] **Step 2: Run — expect FAIL.** Run: `flutter test test/data/app_database_test.dart`
 - [ ] **Step 3: Implement.** In `app_database.dart`: `static const int schemaVersion = 5;` and append to `_migrate`:
@@ -1086,7 +1104,7 @@ testWidgets('archiving an unsettled contact surfaces the outstanding amount', (t
 
 - [ ] **Step 2: Run — expect FAIL.** Run: `flutter test test/presentation/contact_archive_test.dart`
 - [ ] **Step 3: Implement.**
-  - Add `archive` to `_ContactMenuAction` and a menu item `PopupMenuItem(value: _ContactMenuAction.archive, child: Text(l10n.archive))` (always enabled). Guard the whole overflow button behind `widget.contactRepository != null` so focused entry tests without a contact repo are unaffected.
+  - Add `archive` to `_ContactMenuAction`. In the overflow's `itemBuilder`, keep the Reset item unconditional (Task 6) and append the Archive item **only when `widget.contactRepository != null`**: `if (widget.contactRepository != null) PopupMenuItem(value: _ContactMenuAction.archive, child: Text(l10n.archive))`. Do **not** guard the whole overflow button — Reset must stay available in the focused reset test, which wires no `contactRepository`.
   - `_archive(Balance balance)`: build the confirm message — settled → `archiveContactMessage(name)`; owed-to-me → `archiveOutstandingOwedToMe(name, amount)`; owed-by-me → `archiveOutstandingOwedByMe(name, amount)`. On confirm: `await widget.contactRepository!.setArchived(widget.contact.id!, archived: true)`, then `Navigator.pop(context)` (return to home) and let home refresh.
   - Auto-unarchive: in `_addEntry`, after a successful save, `await widget.contactRepository?.setArchived(widget.contact.id!, archived: false)`.
   - Thread `contactRepository` from `home_screen.dart` `_openContact` (`contactRepository: widget.repository`) and from the Archived view (Task 16).
