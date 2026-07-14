@@ -8,6 +8,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 import 'package:printing/printing.dart' show Printing;
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../data/contact_repository.dart';
 import '../../data/entry_repository.dart';
 import '../../domain/balance.dart';
 import '../../domain/contact.dart';
@@ -28,9 +29,9 @@ import '../theme/theme_context.dart';
 import '../widgets/period_selector.dart';
 import 'running_summary_sheet.dart';
 
-/// Overflow (⋮) actions on a Contact. Reset settles the lens balance (#25);
-/// Archive joins in Phase 6.
-enum _ContactMenuAction { reset }
+/// Overflow (⋮) actions on a Contact. Reset settles the lens balance; Archive
+/// sets the whole person aside (both #25).
+enum _ContactMenuAction { reset, archive }
 
 /// The heart of the ledger: one Contact's Entries plus a live per-Contact
 /// [Balance]. Repayment is just an opposite-direction Entry — nothing special
@@ -42,12 +43,24 @@ class ContactScreen extends StatefulWidget {
     required this.repository,
     required this.currency,
     this.profileController,
+    this.contactRepository,
+    this.onArchivedChanged,
     this.onSharePdf,
     this.onLaunchUrl,
   });
 
   final Contact contact;
   final EntryRepository repository;
+
+  /// Enables the Archive overflow action and auto-unarchive on a new entry
+  /// (#25). When null the Archive item is hidden (focused tests that don't
+  /// wire it — e.g. the Reset test — keep Reset available regardless).
+  final ContactRepository? contactRepository;
+
+  /// Fired when this contact's archived state changes here — archived (`true`)
+  /// via the overflow action, or restored (`false`) by booking a new entry.
+  /// Lets a parent list (e.g. the Archived view) refresh itself.
+  final ValueChanged<bool>? onArchivedChanged;
 
   /// The active currency lens; this page shows only this currency's entries and
   /// balance, and new entries inherit it. See CONTEXT.md.
@@ -163,8 +176,61 @@ class _ContactScreenState extends State<ContactScreen> {
       ),
     );
     if (saved != null && mounted) {
+      // Booking activity brings an archived contact back to the active list
+      // (#25). Harmless no-op when they were already active.
+      await widget.contactRepository?.setArchived(
+        widget.contact.id!,
+        archived: false,
+      );
+      if (!mounted) return;
+      if (widget.contact.archived) widget.onArchivedChanged?.call(false);
       setState(_load);
     }
+  }
+
+  /// Archive (#25): sets the whole person aside — they leave the active list,
+  /// grand totals and analysis, but their ledger is preserved and they return
+  /// on any new entry. An unsettled balance is a soft gate, not a block: the
+  /// confirm names the outstanding amount and archives anyway on confirm.
+  Future<void> _archive(Balance balance) async {
+    final l10n = AppLocalizations.of(context);
+    final name = widget.contact.name;
+    final String message;
+    if (balance.isSettled) {
+      message = l10n.archiveContactMessage(name);
+    } else {
+      final amount = formatMoney(balance.magnitude, widget.currency);
+      message = balance.isOwedToMe
+          ? l10n.archiveOutstandingOwedToMe(name, amount)
+          : l10n.archiveOutstandingOwedByMe(name, amount);
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.archiveContactTitle),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.archive),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await widget.contactRepository!.setArchived(
+      widget.contact.id!,
+      archived: true,
+    );
+    if (!mounted) return;
+    widget.onArchivedChanged?.call(true);
+    // Pop back to the caller (home / the Archived view), which refreshes on
+    // return and drops the now-archived contact from its active list.
+    Navigator.of(context).pop();
   }
 
   /// Reset account (#25): appends a single balancing Entry (تسوية) that zeroes
@@ -253,6 +319,8 @@ class _ContactScreenState extends State<ContactScreen> {
               switch (a) {
                 case _ContactMenuAction.reset:
                   _resetAccount(balanceOf(_loaded));
+                case _ContactMenuAction.archive:
+                  _archive(balanceOf(_loaded));
               }
             },
             itemBuilder: (context) => [
@@ -264,6 +332,14 @@ class _ContactScreenState extends State<ContactScreen> {
                 enabled: !balanceOf(_loaded).isSettled,
                 child: Text(l10n.resetAccount),
               ),
+              // Archive only when a contact repository is wired (Reset stays
+              // available either way — see the focused Reset test).
+              if (widget.contactRepository != null)
+                PopupMenuItem(
+                  key: const Key('archive-menu-item'),
+                  value: _ContactMenuAction.archive,
+                  child: Text(l10n.archive),
+                ),
             ],
           ),
         ],

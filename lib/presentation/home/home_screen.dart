@@ -292,6 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
           repository: widget.entryRepository,
           currency: _currency,
           profileController: widget.profileController,
+          contactRepository: widget.repository,
         ),
       ),
     );
