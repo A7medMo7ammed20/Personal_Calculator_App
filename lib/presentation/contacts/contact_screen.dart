@@ -6,6 +6,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 // resolves to Flutter's enum, not intl's bidi class.
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:printing/printing.dart' show Printing;
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/entry_repository.dart';
 import '../../domain/balance.dart';
@@ -16,6 +17,7 @@ import '../../domain/entry_sort.dart';
 import '../../domain/period.dart';
 import '../../domain/statement.dart';
 import '../../l10n/gen/app_localizations.dart';
+import '../contact_share.dart';
 import '../entries/add_entry_screen.dart';
 import '../money_format.dart';
 import '../profile/ensure_profile_name.dart';
@@ -36,6 +38,7 @@ class ContactScreen extends StatefulWidget {
     required this.currency,
     this.profileController,
     this.onSharePdf,
+    this.onLaunchUrl,
   });
 
   final Contact contact;
@@ -53,6 +56,11 @@ class ContactScreen extends StatefulWidget {
   /// (`Printing.sharePdf`); injected in tests to capture the bytes without a
   /// platform channel.
   final Future<void> Function(Uint8List bytes, String filename)? onSharePdf;
+
+  /// Launches a `tel:`/`wa.me` [Uri] for the action strip. Defaults to
+  /// `url_launcher`'s external-application launch; injected in tests to capture
+  /// the URI without a platform channel (mirrors [onSharePdf]).
+  final Future<void> Function(Uri uri)? onLaunchUrl;
 
   @override
   State<ContactScreen> createState() => _ContactScreenState();
@@ -154,6 +162,32 @@ class _ContactScreenState extends State<ContactScreen> {
     }
   }
 
+  Future<void> _launch(Uri uri) async {
+    final launch = widget.onLaunchUrl ??
+        (u) async {
+          await launchUrl(u, mode: LaunchMode.externalApplication);
+        };
+    await launch(uri);
+  }
+
+  // tel: uses the RAW stored number (dialer is unaffected by format, ADR 0008).
+  Future<void> _call(String phone) => _launch(Uri(scheme: 'tel', path: phone));
+
+  // wa.me uses digits only (no country-code inference, ADR 0008) with a
+  // pre-filled, editable balance message in the active lens + app language.
+  Future<void> _whatsApp(String phone, Balance balance) {
+    final message = buildWhatsAppMessage(
+      contactName: widget.contact.name,
+      balance: balance,
+      currency: widget.currency,
+      languageCode: Localizations.localeOf(context).languageCode,
+    );
+    final uri = Uri.https('wa.me', '/${normalizePhoneForWa(phone)}', {
+      'text': message,
+    });
+    return _launch(uri);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -188,6 +222,12 @@ class _ContactScreenState extends State<ContactScreen> {
           );
           return Column(
             children: [
+              if (widget.contact.phone != null)
+                _ContactActionStrip(
+                  phone: widget.contact.phone!,
+                  onCall: () => _call(widget.contact.phone!),
+                  onWhatsApp: () => _whatsApp(widget.contact.phone!, balance),
+                ),
               _BalanceHeader(
                 balance: balance,
                 label: _balanceLabel(l10n, balance),
@@ -356,6 +396,65 @@ class _ContactScreenState extends State<ContactScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Quick informal actions on a Contact (ADR 0008): tap the number to open the
+/// dialer (`tel:`) and a WhatsApp button to open a pre-filled balance nudge
+/// (`wa.me`). The whole strip is hidden by the caller when the Contact has no
+/// phone.
+class _ContactActionStrip extends StatelessWidget {
+  const _ContactActionStrip({
+    required this.phone,
+    required this.onCall,
+    required this.onWhatsApp,
+  });
+
+  final String phone;
+  final VoidCallback onCall;
+  final VoidCallback onWhatsApp;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final spacing = context.spacing;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(spacing.lg, spacing.md, spacing.lg, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              key: const Key('contact-call'),
+              onTap: onCall,
+              borderRadius: BorderRadius.circular(context.radius.md),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: spacing.sm),
+                child: Row(
+                  children: [
+                    const Icon(Icons.call, size: 20),
+                    SizedBox(width: spacing.sm),
+                    Expanded(
+                      child: Text(
+                        phone,
+                        semanticsLabel: '${l10n.callContact}: $phone',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: spacing.md),
+          FilledButton.tonalIcon(
+            key: const Key('contact-whatsapp'),
+            onPressed: onWhatsApp,
+            icon: const Icon(Icons.chat),
+            label: Text(l10n.whatsappShare),
+          ),
+        ],
       ),
     );
   }
