@@ -51,4 +51,31 @@ void main() {
     // The live database still works after export (reopened).
     expect((await (await appDb.open()).query('contacts')).length, 1);
   });
+
+  test('autoBackup keeps only the last N snapshots (ring rotation)', () async {
+    final appDb = dbAt('live.db');
+    addTearDown(appDb.close);
+    await appDb.open();
+
+    // A clock that advances one second per call, so each snapshot is a distinct
+    // file (the timestamp is the filename).
+    var t = DateTime(2026, 1, 1, 0, 0, 0);
+    final service = BackupService(
+      appDatabase: appDb,
+      backupsDir: Directory(p.join(tmp.path, 'backups')),
+      clock: () => t = t.add(const Duration(seconds: 1)),
+      retain: 5,
+    );
+
+    for (var i = 0; i < 7; i++) {
+      await service.autoBackup();
+    }
+
+    final list = await service.listAutoBackups();
+    expect(list.length, 5); // 7 written, oldest 2 evicted
+    // Newest first: strictly descending timestamps.
+    for (var i = 0; i < list.length - 1; i++) {
+      expect(list[i].createdAt.isAfter(list[i + 1].createdAt), isTrue);
+    }
+  });
 }
