@@ -15,6 +15,7 @@ import '../../domain/currency.dart';
 import '../../domain/entry.dart';
 import '../../domain/entry_sort.dart';
 import '../../domain/period.dart';
+import '../../domain/settle.dart';
 import '../../domain/statement.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../contact_share.dart';
@@ -26,6 +27,10 @@ import '../statements/statement_pdf.dart';
 import '../theme/theme_context.dart';
 import '../widgets/period_selector.dart';
 import 'running_summary_sheet.dart';
+
+/// Overflow (⋮) actions on a Contact. Reset settles the lens balance (#25);
+/// Archive joins in Phase 6.
+enum _ContactMenuAction { reset }
 
 /// The heart of the ledger: one Contact's Entries plus a live per-Contact
 /// [Balance]. Repayment is just an opposite-direction Entry — nothing special
@@ -162,6 +167,43 @@ class _ContactScreenState extends State<ContactScreen> {
     }
   }
 
+  /// Reset account (#25): appends a single balancing Entry (تسوية) that zeroes
+  /// the lens [balance], so the balance reads settled while the full history is
+  /// kept. The confirm dialog names the amount; a settled balance yields no
+  /// entry (and the menu item is disabled anyway).
+  Future<void> _resetAccount(Balance balance) async {
+    final l10n = AppLocalizations.of(context);
+    final amount = formatMoney(balance.magnitude, widget.currency);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.resetAccountTitle),
+        content: Text(l10n.resetAccountMessage(amount)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.reset),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final settle = buildSettleEntry(
+      contactId: widget.contact.id!,
+      balance: balance,
+      currency: widget.currency,
+      createdAt: DateTime.now(),
+      description: l10n.settleEntryDescription,
+    );
+    if (settle == null) return;
+    await widget.repository.add(settle);
+    if (mounted) setState(_load);
+  }
+
   Future<void> _launch(Uri uri) async {
     final launch = widget.onLaunchUrl ??
         (u) async {
@@ -205,6 +247,25 @@ class _ContactScreenState extends State<ContactScreen> {
               tooltip: l10n.exportStatement,
               onPressed: _exportStatement,
             ),
+          PopupMenuButton<_ContactMenuAction>(
+            key: const Key('contact-overflow'),
+            onSelected: (a) {
+              switch (a) {
+                case _ContactMenuAction.reset:
+                  _resetAccount(balanceOf(_loaded));
+              }
+            },
+            itemBuilder: (context) => [
+              // Reset is meaningless on an already-settled balance — disable it
+              // rather than book a zero entry.
+              PopupMenuItem(
+                key: const Key('reset-menu-item'),
+                value: _ContactMenuAction.reset,
+                enabled: !balanceOf(_loaded).isSettled,
+                child: Text(l10n.resetAccount),
+              ),
+            ],
+          ),
         ],
       ),
       body: FutureBuilder<List<Entry>>(
