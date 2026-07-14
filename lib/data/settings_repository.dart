@@ -1,6 +1,8 @@
 import 'package:sqflite/sqflite.dart';
 
 import '../domain/accent_theme.dart';
+import '../domain/currency.dart';
+import '../domain/language_choice.dart';
 import '../domain/theme_choice.dart';
 import 'app_database.dart';
 
@@ -17,6 +19,8 @@ class SettingsRepository {
 
   static const String _accentKey = 'accent';
   static const String _themeChoiceKey = 'theme_choice';
+  static const String _defaultCurrencyKey = 'default_currency';
+  static const String _languageKey = 'language';
 
   final AppDatabase _appDb;
 
@@ -32,6 +36,22 @@ class SettingsRepository {
 
   Future<void> setThemeChoice(ThemeChoice choice) =>
       _set(_themeChoiceKey, choice.code);
+
+  /// The persisted launch/default [Currency], or [Currency.defaultCurrency]
+  /// (SAR) when unset. Degrades rather than throwing (ADR 0007).
+  Future<Currency> defaultCurrency() async =>
+      Currency.fromCodeOrDefault(await _get(_defaultCurrencyKey));
+
+  Future<void> setDefaultCurrency(Currency currency) =>
+      _set(_defaultCurrencyKey, currency.code);
+
+  /// The persisted [LanguageChoice], or [LanguageChoice.defaultChoice]
+  /// (system) when unset.
+  Future<LanguageChoice> language() async =>
+      LanguageChoice.fromCode(await _get(_languageKey));
+
+  Future<void> setLanguage(LanguageChoice choice) =>
+      _set(_languageKey, choice.code);
 
   Future<String?> _get(String key) async {
     final db = await _appDb.open();

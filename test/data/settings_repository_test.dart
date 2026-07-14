@@ -1,6 +1,8 @@
 import 'package:debt_ledger/data/app_database.dart';
 import 'package:debt_ledger/data/settings_repository.dart';
 import 'package:debt_ledger/domain/accent_theme.dart';
+import 'package:debt_ledger/domain/currency.dart';
+import 'package:debt_ledger/domain/language_choice.dart';
 import 'package:debt_ledger/domain/theme_choice.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -48,5 +50,29 @@ void main() {
     final other = SettingsRepository(appDb);
     expect(await other.accent(), AccentTheme.indigo);
     expect(await other.themeChoice(), ThemeChoice.light);
+  });
+
+  test('returns the new defaults on a fresh database', () async {
+    expect(await repo.defaultCurrency(), Currency.sar);
+    expect(await repo.language(), LanguageChoice.system);
+  });
+
+  test('persists and reads back the default currency', () async {
+    await repo.setDefaultCurrency(Currency.yer);
+    expect(await repo.defaultCurrency(), Currency.yer);
+  });
+
+  test('persists and reads back the language', () async {
+    await repo.setLanguage(LanguageChoice.arabic);
+    expect(await repo.language(), LanguageChoice.arabic);
+  });
+
+  test('a separate repository sees the persisted currency + language', () async {
+    await repo.setDefaultCurrency(Currency.yer);
+    await repo.setLanguage(LanguageChoice.english);
+
+    final other = SettingsRepository(appDb);
+    expect(await other.defaultCurrency(), Currency.yer);
+    expect(await other.language(), LanguageChoice.english);
   });
 }
