@@ -1,10 +1,12 @@
 import 'package:debt_ledger/data/app_database.dart';
 import 'package:debt_ledger/data/contact_repository.dart';
 import 'package:debt_ledger/data/entry_repository.dart';
+import 'package:debt_ledger/data/settings_repository.dart';
 import 'package:debt_ledger/domain/contact.dart';
 import 'package:debt_ledger/domain/currency.dart';
 import 'package:debt_ledger/domain/entry.dart';
 import 'package:debt_ledger/l10n/gen/app_localizations.dart';
+import 'package:debt_ledger/presentation/currency/currency_controller.dart';
 import 'package:debt_ledger/presentation/home/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -35,6 +37,15 @@ void main() {
 
   tearDown(() => appDb.close());
 
+  // A HomeScreen wired with a never-loaded controller → defaults to the SAR
+  // lens, preserving the existing assertions. Tab taps still switch via
+  // setActive. The AC test below supplies its own loaded controller.
+  HomeScreen homeScreen() => HomeScreen(
+        repository: contacts,
+        entryRepository: entries,
+        currencyController: CurrencyController(SettingsRepository(appDb)),
+      );
+
   testWidgets('swipe-to-reveal delete warns a contact with the entry count', (
     tester,
   ) async {
@@ -59,7 +70,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      _wrap(HomeScreen(repository: contacts, entryRepository: entries)),
+      _wrap(homeScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -91,7 +102,7 @@ void main() {
     await contacts.add(const Contact(name: 'Sara'));
 
     await tester.pumpWidget(
-      _wrap(HomeScreen(repository: contacts, entryRepository: entries)),
+      _wrap(homeScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -110,7 +121,7 @@ void main() {
     await contacts.add(const Contact(name: 'Sara', phone: '050 999 0000'));
 
     await tester.pumpWidget(
-      _wrap(HomeScreen(repository: contacts, entryRepository: entries)),
+      _wrap(homeScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -127,7 +138,7 @@ void main() {
     await contacts.add(const Contact(name: 'Ali', phone: '055 512 3456'));
 
     await tester.pumpWidget(
-      _wrap(HomeScreen(repository: contacts, entryRepository: entries)),
+      _wrap(homeScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -151,7 +162,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      _wrap(HomeScreen(repository: contacts, entryRepository: entries)),
+      _wrap(homeScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -187,7 +198,7 @@ void main() {
       await addEntry(sara.id!, amount: 500, when: DateTime(2020, 1, 1));
 
       await tester.pumpWidget(
-        _wrap(HomeScreen(repository: contacts, entryRepository: entries)),
+        _wrap(homeScreen()),
       );
       await tester.pumpAndSettle();
 
@@ -222,7 +233,7 @@ void main() {
     await addEntry(ali.id!, amount: 100, when: DateTime(2020, 1, 1));
 
     await tester.pumpWidget(
-      _wrap(HomeScreen(repository: contacts, entryRepository: entries)),
+      _wrap(homeScreen()),
     );
     await tester.pumpAndSettle();
 
@@ -233,5 +244,43 @@ void main() {
 
     expect(find.text('Ali'), findsNothing);
     expect(find.text('No activity in this period'), findsOneWidget);
+  });
+
+  testWidgets('opens on the currency controller\'s active lens (default seed)',
+      (tester) async {
+    final khaled = await contacts.add(const Contact(name: 'Khaled'));
+    await entries.add(Entry(
+      contactId: khaled.id!,
+      amount: 100,
+      direction: Direction.owedToMe,
+      currency: Currency.sar,
+      createdAt: DateTime(2026, 7, 13, 12),
+    ));
+    await entries.add(Entry(
+      contactId: khaled.id!,
+      amount: 300,
+      direction: Direction.owedToMe,
+      currency: Currency.yer,
+      createdAt: DateTime(2026, 7, 13, 12),
+    ));
+
+    // Seed the persisted default to YER, then load the controller.
+    final settings = SettingsRepository(appDb);
+    await settings.setDefaultCurrency(Currency.yer);
+    final currency = CurrencyController(settings);
+    await currency.load();
+
+    await tester.pumpWidget(_wrap(
+      HomeScreen(
+        repository: contacts,
+        entryRepository: entries,
+        currencyController: currency,
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Home opens on the YER lens, not the hardcoded SAR.
+    expect(find.textContaining('300.00'), findsWidgets);
+    expect(find.textContaining('100.00'), findsNothing);
   });
 }

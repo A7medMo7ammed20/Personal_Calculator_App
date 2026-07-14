@@ -15,6 +15,8 @@ import '../../l10n/gen/app_localizations.dart';
 import '../analysis/analysis_graph_screen.dart';
 import '../contacts/add_contact_screen.dart';
 import '../contacts/contact_screen.dart';
+import '../currency/currency_controller.dart';
+import '../locale/locale_controller.dart';
 import '../money_format.dart';
 import '../profile/profile_controller.dart';
 import '../settings/settings_screen.dart';
@@ -33,12 +35,19 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.repository,
     required this.entryRepository,
+    required this.currencyController,
     this.themeController,
     this.profileController,
+    this.localeController,
   });
 
   final ContactRepository repository;
   final EntryRepository entryRepository;
+
+  /// The global currency lens (ADR 0007). Home reads [CurrencyController.active]
+  /// and the bottom tabs call [CurrencyController.setActive]; changing the
+  /// default in Settings live-switches it. Required — the lens is core to home.
+  final CurrencyController currencyController;
 
   /// Drives the Settings screen reached from the overflow menu. Optional so
   /// focused widget tests can pump the list without wiring theming; the real
@@ -49,6 +58,10 @@ class HomeScreen extends StatefulWidget {
   /// (on the Contact screen). Optional for the same testability reason; the
   /// real app always supplies it.
   final ProfileController? profileController;
+
+  /// Drives the language segmented control in Settings. Optional, like
+  /// [themeController]; the real app supplies it.
+  final LocaleController? localeController;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -78,7 +91,7 @@ class _HomeData {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  Currency _currency = Currency.sar;
+  Currency get _currency => widget.currencyController.active;
   late Future<_HomeData> _data;
 
   // Search + sort live on the screen (ephemeral): they persist across a lens
@@ -97,13 +110,21 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    widget.currencyController.addListener(_onCurrencyChanged);
     _load();
   }
 
   @override
   void dispose() {
+    widget.currencyController.removeListener(_onCurrencyChanged);
     _searchController.dispose();
     super.dispose();
+  }
+
+  // The lens changed (a tab tap here, or a live-switch from Settings while home
+  // sits underneath) — refetch this lens's data.
+  void _onCurrencyChanged() {
+    if (mounted) setState(_load);
   }
 
   void _load() {
@@ -185,13 +206,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _selectCurrency(Currency currency) {
-    if (currency == _currency) return;
-    setState(() {
-      _currency = currency;
-      _load();
-    });
-  }
+  void _selectCurrency(Currency currency) =>
+      widget.currencyController.setActive(currency);
 
   void _onMenuAction(_HomeMenuAction action, AppLocalizations l10n) {
     switch (action) {
@@ -226,8 +242,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
     if (result == null || !mounted) return;
+    widget.currencyController.setActive(result.currency);
     setState(() {
-      _currency = result.currency;
       _period = result.period;
       _customStart = result.customStart;
       _customEnd = result.customEnd;

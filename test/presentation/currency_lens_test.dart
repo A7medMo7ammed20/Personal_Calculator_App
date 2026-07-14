@@ -1,10 +1,12 @@
 import 'package:debt_ledger/data/app_database.dart';
 import 'package:debt_ledger/data/contact_repository.dart';
 import 'package:debt_ledger/data/entry_repository.dart';
+import 'package:debt_ledger/data/settings_repository.dart';
 import 'package:debt_ledger/domain/contact.dart';
 import 'package:debt_ledger/domain/currency.dart';
 import 'package:debt_ledger/domain/entry.dart';
 import 'package:debt_ledger/l10n/gen/app_localizations.dart';
+import 'package:debt_ledger/presentation/currency/currency_controller.dart';
 import 'package:debt_ledger/presentation/home/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -45,8 +47,11 @@ void main() {
     createdAt: DateTime(2026, 7, 13, 12),
   );
 
-  HomeScreen home() =>
-      HomeScreen(repository: contacts, entryRepository: entries);
+  HomeScreen home() => HomeScreen(
+        repository: contacts,
+        entryRepository: entries,
+        currencyController: CurrencyController(SettingsRepository(appDb)),
+      );
 
   testWidgets('home shows the currency lens with SAR and YER', (tester) async {
     await tester.pumpWidget(_wrap(const Locale('en'), home()));
