@@ -138,4 +138,19 @@ void main() {
     addTearDown(snap.close);
     expect((await snap.query('contacts')).single['name'], 'CurrentB');
   });
+
+  test('restore refuses a non-Daftar file and leaves live data untouched', () async {
+    final b = dbAt('b.db');
+    addTearDown(b.close);
+    await (await b.open()).insert('contacts', {'name': 'Keep me'});
+
+    final garbage = File(p.join(tmp.path, 'notes.txt'));
+    await garbage.writeAsString('this is not a database');
+
+    final result = await serviceFor(b).restore(garbage);
+
+    expect(result, RestoreResult.notABackup);
+    // Live data survived — the file was refused before any swap.
+    expect((await (await b.open()).query('contacts')).single['name'], 'Keep me');
+  });
 }
