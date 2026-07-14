@@ -89,4 +89,10 @@ void main() {
     final bytes = await renderStatementPdf(doc, l10n, 'ar');
     expect(_isPdf(bytes), isTrue);
   });
+
+  testWidgets('renders a valid PDF after the footer rework (RTL)', (tester) async {
+    final l10n = await AppLocalizations.delegate.load(const Locale('ar'));
+    final bytes = await renderStatementPdf(_doc(isRtl: true), l10n, 'ar');
+    expect(_isPdf(bytes), isTrue);
+  });
 }

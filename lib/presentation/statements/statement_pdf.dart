@@ -183,15 +183,21 @@ pw.Widget _entriesTable(
               color: balanceColor(r.balance), align: pw.TextAlign.end),
         ],
       ),
-    // Gross directional totals under their columns.
+    // Footer row: label in the description cell, gross totals under their columns,
+    // and the closing balance terminating the balance column (ADR 0009).
     pw.TableRow(
       decoration: const pw.BoxDecoration(color: PdfColors.grey100),
       children: [
-        _cell(l10n.statementTotal, bold: true),
         _cell(''),
+        _cell(l10n.statementTotal, bold: true),
         _cell(money(doc.totalOwedToMe), align: pw.TextAlign.end, bold: true),
         _cell(money(doc.totalOwedByMe), align: pw.TextAlign.end, bold: true),
-        _cell(''),
+        _cell(
+          balanceAmount(doc.closingBalance),
+          color: balanceColor(doc.closingBalance),
+          align: pw.TextAlign.end,
+          bold: true,
+        ),
       ],
     ),
   ];
