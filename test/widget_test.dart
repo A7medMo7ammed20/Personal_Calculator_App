@@ -66,11 +66,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.person_add));
+    // Open the ＋ speed-dial, then choose Add جهة اتصال.
+    await tester.tap(find.byKey(const Key('home-speed-dial')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('quick-add-contact')));
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextFormField).first, 'Khaled');
-    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    // The opening-معاملة section pushes Save below the fold now.
+    final save = find.widgetWithText(FilledButton, 'Save');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
     await tester.pumpAndSettle();
 
     expect(find.text('Khaled'), findsOneWidget);
@@ -83,10 +89,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.person_add));
+    // Open the ＋ speed-dial, then choose Add جهة اتصال.
+    await tester.tap(find.byKey(const Key('home-speed-dial')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('quick-add-contact')));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    final save = find.widgetWithText(FilledButton, 'Save');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
     await tester.pumpAndSettle();
 
     // Still on the form, with the validation message shown.

@@ -8,6 +8,7 @@ import '../../domain/balance.dart';
 import '../../domain/contact.dart';
 import '../../domain/contact_sort.dart';
 import '../../domain/currency.dart';
+import '../../domain/entry.dart';
 import '../../domain/flow.dart';
 import '../../domain/ledger_totals.dart';
 import '../../domain/period.dart';
@@ -16,12 +17,14 @@ import '../analysis/analysis_graph_screen.dart';
 import '../contacts/add_contact_screen.dart';
 import '../contacts/contact_screen.dart';
 import '../currency/currency_controller.dart';
+import '../entries/add_transaction_screen.dart';
 import '../locale/locale_controller.dart';
 import '../money_format.dart';
 import '../profile/profile_controller.dart';
 import '../settings/settings_screen.dart';
 import '../theme/theme_context.dart';
 import '../theme/theme_controller.dart';
+import 'quick_add_speed_dial.dart';
 
 /// Global destinations behind the home overflow menu (⋮). The Analysis graph
 /// (#8) and Settings live here; Backup joins when it ships (ADR 0003/0004).
@@ -253,10 +256,29 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _addTransaction() async {
+    final saved = await Navigator.of(context).push<Entry>(
+      MaterialPageRoute(
+        builder: (_) => AddTransactionScreen(
+          contactRepository: widget.repository,
+          entryRepository: widget.entryRepository,
+          currency: _currency,
+        ),
+      ),
+    );
+    if (saved != null && mounted) setState(_load);
+  }
+
   Future<void> _addContact() async {
+    // Pass the first-معاملة params so "Add جهة اتصال" can book an opening
+    // entry in the active lens (#25).
     final saved = await Navigator.of(context).push<Contact>(
       MaterialPageRoute(
-        builder: (_) => AddContactScreen(repository: widget.repository),
+        builder: (_) => AddContactScreen(
+          repository: widget.repository,
+          entryRepository: widget.entryRepository,
+          currency: _currency,
+        ),
       ),
     );
     if (saved != null && mounted) setState(_load);
@@ -402,10 +424,9 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addContact,
-        tooltip: l10n.addContact,
-        child: const Icon(Icons.person_add),
+      floatingActionButton: QuickAddSpeedDial(
+        onAddTransaction: _addTransaction,
+        onAddContact: _addContact,
       ),
       // The currency lens is the whole bottom bar: a tap-only SAR/YER pill bar
       // with an animated indicator that slides to the active currency
