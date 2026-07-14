@@ -109,4 +109,14 @@ void main() {
     // Schema is intact — a subsequent open still reports v5.
     expect(await db.getVersion(), 5);
   });
+
+  test('resolvedPath returns the injected path', () async {
+    final appDb = AppDatabase(factory: databaseFactoryFfi, path: '/tmp/x.db');
+    expect(await appDb.resolvedPath(), '/tmp/x.db');
+  });
+
+  test('factory getter returns the injected factory', () {
+    final appDb = AppDatabase(factory: databaseFactoryFfi, path: '/tmp/x.db');
+    expect(identical(appDb.factory, databaseFactoryFfi), isTrue);
+  });
 }

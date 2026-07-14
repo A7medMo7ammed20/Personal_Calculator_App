@@ -23,12 +23,20 @@ class AppDatabase {
 
   Database? _db;
 
+  /// The factory the app opened with — reused to validate candidate backup
+  /// files against the same SQLite engine (see BackupService).
+  DatabaseFactory get factory => _factory;
+
+  /// The absolute path of the live database file (same resolution [open] uses).
+  Future<String> resolvedPath() async =>
+      _path ?? p.join(await _factory.getDatabasesPath(), _defaultFileName);
+
   /// Opens the database (idempotent), running migrations as needed.
   Future<Database> open() async {
     final existing = _db;
     if (existing != null) return existing;
 
-    final dbPath = _path ?? p.join(await _factory.getDatabasesPath(), _defaultFileName);
+    final dbPath = await resolvedPath();
     final db = await _factory.openDatabase(
       dbPath,
       options: OpenDatabaseOptions(
