@@ -14,7 +14,7 @@ class AppDatabase {
 
   /// Current schema version. Bump this and handle the delta in [_migrate]
   /// whenever the schema changes.
-  static const int schemaVersion = 4;
+  static const int schemaVersion = 5;
 
   static const String _defaultFileName = 'debt_ledger.db';
 
@@ -95,6 +95,12 @@ class AppDatabase {
           value TEXT NOT NULL
         )
       ''');
+    }
+    if (from < 5) {
+      // Archive (ADR 0009): a whole-person set-aside flag. 0 = active, 1 = archived.
+      await db.execute(
+        'ALTER TABLE contacts ADD COLUMN archived INTEGER NOT NULL DEFAULT 0',
+      );
     }
   }
 }
