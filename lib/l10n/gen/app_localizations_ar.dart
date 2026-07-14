@@ -398,4 +398,53 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get erase => 'مسح';
+
+  @override
+  String get settingsBackup => 'النسخ الاحتياطي والاستعادة';
+
+  @override
+  String get backupExport => 'تصدير نسخة احتياطية';
+
+  @override
+  String get backupExportHint => 'هذا الملف غير مُشفَّر — احفظه في مكان خاص.';
+
+  @override
+  String get backupRestoreFromFile => 'استعادة من ملف';
+
+  @override
+  String get backupRestoreFromAuto => 'استعادة من نسخة تلقائية';
+
+  @override
+  String get backupRestoreTitle => 'استعادة النسخة الاحتياطية؟';
+
+  @override
+  String get backupRestoreMessage =>
+      'سيؤدي هذا إلى استبدال جميع البيانات الحالية بالنسخة الاحتياطية. يتم حفظ بياناتك الحالية في نسخة تلقائية أولًا، حتى يمكنك التراجع.';
+
+  @override
+  String get backupRestoreConfirm => 'استعادة';
+
+  @override
+  String get backupNoAutoBackups => 'لا توجد نسخ تلقائية بعد';
+
+  @override
+  String get backupAutoBackupsTitle => 'استعادة من نسخة تلقائية';
+
+  @override
+  String get restoreSuccess => 'تمت استعادة البيانات';
+
+  @override
+  String get restoreNotABackup => 'هذا الملف ليس نسخة احتياطية من دفتر';
+
+  @override
+  String get restoreNewerVersion => 'أُنشئت هذه النسخة بإصدار أحدث من دفتر';
+
+  @override
+  String get restoreFailed => 'فشلت الاستعادة';
+
+  @override
+  String get exportSuccess => 'تم تصدير النسخة الاحتياطية';
+
+  @override
+  String get exportFailed => 'فشل التصدير';
 }

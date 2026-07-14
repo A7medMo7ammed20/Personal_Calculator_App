@@ -118,5 +118,21 @@
   "eraseAllDataTitle": "مسح جميع البيانات؟",
   "eraseAllDataMessage": "سيؤدي هذا إلى حذف جميع جهات الاتصال والمعاملات وملفك وإعداداتك نهائيًا. اكتب {word} للتأكيد — لا يمكن التراجع.",
   "eraseConfirmWord": "مسح",
-  "erase": "مسح"
+  "erase": "مسح",
+  "settingsBackup": "النسخ الاحتياطي والاستعادة",
+  "backupExport": "تصدير نسخة احتياطية",
+  "backupExportHint": "هذا الملف غير مُشفَّر — احفظه في مكان خاص.",
+  "backupRestoreFromFile": "استعادة من ملف",
+  "backupRestoreFromAuto": "استعادة من نسخة تلقائية",
+  "backupRestoreTitle": "استعادة النسخة الاحتياطية؟",
+  "backupRestoreMessage": "سيؤدي هذا إلى استبدال جميع البيانات الحالية بالنسخة الاحتياطية. يتم حفظ بياناتك الحالية في نسخة تلقائية أولًا، حتى يمكنك التراجع.",
+  "backupRestoreConfirm": "استعادة",
+  "backupNoAutoBackups": "لا توجد نسخ تلقائية بعد",
+  "backupAutoBackupsTitle": "استعادة من نسخة تلقائية",
+  "restoreSuccess": "تمت استعادة البيانات",
+  "restoreNotABackup": "هذا الملف ليس نسخة احتياطية من دفتر",
+  "restoreNewerVersion": "أُنشئت هذه النسخة بإصدار أحدث من دفتر",
+  "restoreFailed": "فشلت الاستعادة",
+  "exportSuccess": "تم تصدير النسخة الاحتياطية",
+  "exportFailed": "فشل التصدير"
 }

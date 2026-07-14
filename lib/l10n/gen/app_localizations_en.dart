@@ -397,4 +397,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get erase => 'Erase';
+
+  @override
+  String get settingsBackup => 'Backup & restore';
+
+  @override
+  String get backupExport => 'Export backup';
+
+  @override
+  String get backupExportHint =>
+      'This file isn\'t encrypted — store it somewhere private.';
+
+  @override
+  String get backupRestoreFromFile => 'Restore from file';
+
+  @override
+  String get backupRestoreFromAuto => 'Restore from auto-backup';
+
+  @override
+  String get backupRestoreTitle => 'Restore backup?';
+
+  @override
+  String get backupRestoreMessage =>
+      'This replaces all current data with the backup. Your current data is saved to an auto-backup first, so you can undo this.';
+
+  @override
+  String get backupRestoreConfirm => 'Restore';
+
+  @override
+  String get backupNoAutoBackups => 'No auto-backups yet';
+
+  @override
+  String get backupAutoBackupsTitle => 'Restore from auto-backup';
+
+  @override
+  String get restoreSuccess => 'Data restored';
+
+  @override
+  String get restoreNotABackup => 'That file isn\'t a Daftar backup';
+
+  @override
+  String get restoreNewerVersion =>
+      'This backup was made by a newer version of Daftar';
+
+  @override
+  String get restoreFailed => 'Restore failed';
+
+  @override
+  String get exportSuccess => 'Backup exported';
+
+  @override
+  String get exportFailed => 'Export failed';
 }

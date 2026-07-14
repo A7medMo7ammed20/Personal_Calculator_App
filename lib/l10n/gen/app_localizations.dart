@@ -811,6 +811,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Erase'**
   String get erase;
+
+  /// Settings section header for backup/restore/auto-backup (#26).
+  ///
+  /// In en, this message translates to:
+  /// **'Backup & restore'**
+  String get settingsBackup;
+
+  /// Action that exports the whole database to a shareable file (#26).
+  ///
+  /// In en, this message translates to:
+  /// **'Export backup'**
+  String get backupExport;
+
+  /// Export-time reminder the backup file is plaintext (#26, story 17).
+  ///
+  /// In en, this message translates to:
+  /// **'This file isn\'t encrypted — store it somewhere private.'**
+  String get backupExportHint;
+
+  /// Action that restores from a picked backup file (#26).
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from file'**
+  String get backupRestoreFromFile;
+
+  /// Action that opens the dated on-device auto-backup list (#26).
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from auto-backup'**
+  String get backupRestoreFromAuto;
+
+  /// Confirm dialog title before a full-replace restore (#26).
+  ///
+  /// In en, this message translates to:
+  /// **'Restore backup?'**
+  String get backupRestoreTitle;
+
+  /// Confirm dialog body warning restore is a full replace (#26, story 8/9).
+  ///
+  /// In en, this message translates to:
+  /// **'This replaces all current data with the backup. Your current data is saved to an auto-backup first, so you can undo this.'**
+  String get backupRestoreMessage;
+
+  /// Confirm button label for the restore dialog (#26).
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get backupRestoreConfirm;
+
+  /// Shown when the auto-backup ring is empty (#26).
+  ///
+  /// In en, this message translates to:
+  /// **'No auto-backups yet'**
+  String get backupNoAutoBackups;
+
+  /// Title of the dated auto-backup picker (#26, story 12).
+  ///
+  /// In en, this message translates to:
+  /// **'Restore from auto-backup'**
+  String get backupAutoBackupsTitle;
+
+  /// Success message after a restore (#26, story 20).
+  ///
+  /// In en, this message translates to:
+  /// **'Data restored'**
+  String get restoreSuccess;
+
+  /// Refused: the picked file is foreign/corrupt (#26, story 13).
+  ///
+  /// In en, this message translates to:
+  /// **'That file isn\'t a Daftar backup'**
+  String get restoreNotABackup;
+
+  /// Refused: the backup is from a newer app version (#26, story 14).
+  ///
+  /// In en, this message translates to:
+  /// **'This backup was made by a newer version of Daftar'**
+  String get restoreNewerVersion;
+
+  /// Generic restore failure message (#26, story 20).
+  ///
+  /// In en, this message translates to:
+  /// **'Restore failed'**
+  String get restoreFailed;
+
+  /// Success message after an export/share (#26, story 20).
+  ///
+  /// In en, this message translates to:
+  /// **'Backup exported'**
+  String get exportSuccess;
+
+  /// Failure message when export could not produce/share a file (#26).
+  ///
+  /// In en, this message translates to:
+  /// **'Export failed'**
+  String get exportFailed;
 }
 
 class _AppLocalizationsDelegate
