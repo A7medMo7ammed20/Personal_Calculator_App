@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 
 import '../../data/entry_repository.dart';
 import '../../domain/currency.dart';
 import '../../domain/entry.dart';
 import '../../l10n/gen/app_localizations.dart';
+import 'entry_fields.dart';
 
 /// Form to add a new [Entry] under a Contact — or edit an existing one when
 /// [existing] is passed: amount, direction, date/time and an optional
@@ -46,11 +45,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   late DateTime _when;
   bool _saving = false;
 
-  static DateTime _nowToMinute() {
-    final n = DateTime.now();
-    return DateTime(n.year, n.month, n.day, n.hour, n.minute);
-  }
-
   /// Renders 100.0 as "100" and 42.5 as "42.5" for the amount field.
   static String _trimAmount(double amount) {
     if (amount == amount.roundToDouble()) return amount.toInt().toString();
@@ -68,7 +62,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       _when = existing.createdAt;
     } else {
       _direction = Direction.owedToMe;
-      _when = _nowToMinute();
+      _when = nowToMinute();
     }
   }
 
@@ -80,29 +74,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   }
 
   Future<void> _pickDateTime() async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _when,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (date == null || !mounted) return;
-
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(_when),
-    );
-    if (!mounted) return;
-
-    setState(() {
-      _when = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time?.hour ?? _when.hour,
-        time?.minute ?? _when.minute,
-      );
-    });
+    final picked = await pickEntryDateTime(context, _when);
+    if (picked != null && mounted) setState(() => _when = picked);
   }
 
   Future<void> _save() async {
@@ -139,10 +112,6 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final dateLabel = DateFormat.yMMMd(
-      Localizations.localeOf(context).toString(),
-    ).add_jm().format(_when);
 
     return Scaffold(
       appBar: AppBar(
@@ -155,68 +124,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextFormField(
-                controller: _amountController,
-                autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                ],
-                decoration: InputDecoration(
-                  labelText: l10n.entryAmount,
-                  border: const OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  final text = value?.trim() ?? '';
-                  if (text.isEmpty) return l10n.amountRequired;
-                  final amount = double.tryParse(text);
-                  if (amount == null || amount <= 0) return l10n.amountInvalid;
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              SegmentedButton<Direction>(
-                segments: [
-                  ButtonSegment(
-                    value: Direction.owedToMe,
-                    label: Text(l10n.directionOwedToMe),
-                    icon: const Icon(Icons.south_west),
-                  ),
-                  ButtonSegment(
-                    value: Direction.owedByMe,
-                    label: Text(l10n.directionOwedByMe),
-                    icon: const Icon(Icons.north_east),
-                  ),
-                ],
-                selected: {_direction},
-                onSelectionChanged: (selection) {
-                  setState(() => _direction = selection.first);
-                },
-                style: ButtonStyle(
-                  backgroundColor: WidgetStateProperty.resolveWith((states) {
-                    if (!states.contains(WidgetState.selected)) return null;
-                    return _direction == Direction.owedToMe
-                        ? Colors.green.withValues(alpha: 0.18)
-                        : scheme.errorContainer;
-                  }),
-                ),
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: _pickDateTime,
-                icon: const Icon(Icons.event),
-                label: Text('${l10n.entryDateTime}: $dateLabel'),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                textInputAction: TextInputAction.done,
-                decoration: InputDecoration(
-                  labelText: l10n.entryDescription,
-                  border: const OutlineInputBorder(),
-                ),
+              EntryFields(
+                amountController: _amountController,
+                descriptionController: _descriptionController,
+                direction: _direction,
+                onDirectionChanged: (d) => setState(() => _direction = d),
+                when: _when,
+                onPickDateTime: _pickDateTime,
               ),
               const SizedBox(height: 24),
               FilledButton(
