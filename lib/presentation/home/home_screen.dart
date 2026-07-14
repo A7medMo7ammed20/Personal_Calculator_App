@@ -15,6 +15,7 @@ import '../../domain/period.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../analysis/analysis_graph_screen.dart';
 import '../contacts/add_contact_screen.dart';
+import '../contacts/archived_contacts_screen.dart';
 import '../contacts/contact_screen.dart';
 import '../currency/currency_controller.dart';
 import '../entries/add_transaction_screen.dart';
@@ -27,8 +28,9 @@ import '../theme/theme_controller.dart';
 import 'quick_add_speed_dial.dart';
 
 /// Global destinations behind the home overflow menu (⋮). The Analysis graph
-/// (#8) and Settings live here; Backup joins when it ships (ADR 0003/0004).
-enum _HomeMenuAction { analysis, settings }
+/// (#8), the Archived view (#25) and Settings live here; Backup joins when it
+/// ships (ADR 0003/0004).
+enum _HomeMenuAction { analysis, archived, settings }
 
 /// Home screen: a global currency lens, per-currency grand totals, and the
 /// Contact list showing each Contact's balance in the selected currency. The
@@ -216,6 +218,8 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (action) {
       case _HomeMenuAction.analysis:
         _openAnalysis();
+      case _HomeMenuAction.archived:
+        _openArchived();
       case _HomeMenuAction.settings:
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -254,6 +258,22 @@ class _HomeScreenState extends State<HomeScreen> {
       _customEnd = result.customEnd;
       _load();
     });
+  }
+
+  /// Opens the Archived view (#25). An unarchive there — or a new entry booked
+  /// against an archived contact — changes the active set, so refresh on return.
+  Future<void> _openArchived() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ArchivedContactsScreen(
+          contactRepository: widget.repository,
+          entryRepository: widget.entryRepository,
+          currency: _currency,
+          profileController: widget.profileController,
+        ),
+      ),
+    );
+    if (mounted) setState(_load);
   }
 
   Future<void> _addTransaction() async {
@@ -326,6 +346,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Icon(Icons.show_chart),
                       SizedBox(width: context.spacing.md),
                       Text(l10n.analysisTitle),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _HomeMenuAction.archived,
+                  child: Row(
+                    children: [
+                      const Icon(Icons.archive_outlined),
+                      SizedBox(width: context.spacing.md),
+                      Text(l10n.archivedTitle),
                     ],
                   ),
                 ),
