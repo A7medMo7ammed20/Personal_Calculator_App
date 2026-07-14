@@ -83,7 +83,51 @@ itself makes no network call, so they stay within the local-only stance of
 The single local app owner (you). Name (required — appears as creditor on statements) + optional phone. No account, login, or email.
 
 ### Backup
-Manual export/import of the whole database to a shareable file, plus a rolling on-device auto-backup. Local-only; no cloud sync. See [ADR 0001](docs/adr/0001-local-only-storage-with-manual-backup.md).
+Getting the ledger safely off the device — and back. Two complementary
+mechanisms, deliberately different in **reach**:
+
+- **Manual backup (export)** — the user exports the **whole database** to a
+  single shareable file and sends it wherever they like (Drive, email-to-self)
+  through the OS share sheet. This is **disaster recovery**: the file leaves the
+  device, so it survives uninstall, factory reset, or a lost phone. The file is
+  **not encrypted** — its privacy is the privacy of wherever the user stores it.
+- **[[Auto-backup]]** — a rolling on-device safety net, a different reach entirely.
+
+Both are **local-only**: Daftar makes no network call and integrates no cloud
+service (ADR 0001). Restoring is always a **full replace**, never a merge (see
+[[Restore]]). The backup file format (whole-database copy) and the no-encryption
+choice are recorded in [ADR 0010](docs/adr/0010-backup-file-format-and-restore.md);
+the local-only stance in [ADR 0001](docs/adr/0001-local-only-storage-with-manual-backup.md).
+
+- Arabic: نسخة احتياطية
+
+### Restore
+Replacing the entire local database with the contents of a [[Backup]] file — a
+**full replace**, not a merge: restoring discards all current data in favour of
+the backup's [[Contact]]s, [[Entry]] rows, settings, and [[Profile]]. Because
+settings and profile live in the same database, they travel with the backup and
+are restored too (accent, brightness, default [[Currency]], language). Guarded by
+a **single confirm dialog** (not the type-to-confirm reserved for the
+irreversible [[Erase all data]]), and the current data is snapshotted into the
+[[Auto-backup]] ring **first**, so an accidental restore is itself undoable. A
+file that is not a valid Daftar backup, or one made by a **newer** app version,
+is refused **before** anything is replaced — the live data is never left in a
+half-swapped state. Distinct from [[Erase all data]] (which wipes to first-run
+rather than replacing).
+
+- Arabic: استعادة
+
+### Auto-backup
+A rolling on-device safety net: Daftar snapshots the database automatically
+(keeping the last few) as the user works — no tapping required. Unlike a manual
+[[Backup]], these snapshots stay in the app's **private storage**: they are the
+on-device **"undo"** for an accidental [[Restore]] (and, later, [[Erase all
+data]]) and can be restored from within the app, but they **die with the app** —
+uninstall or factory reset removes them. So they **complement, never replace**,
+exporting a manual backup off-device. A snapshot is written when the app is
+backgrounded and only if the data changed since the last one. See ADR 0001.
+
+- Arabic: النسخ الاحتياطي التلقائي
 
 ### App lock
 Optional biometric/device-PIN lock (off by default) via the OS. No custom PIN is stored.
