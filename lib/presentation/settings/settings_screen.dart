@@ -10,6 +10,7 @@ import '../locale/locale_controller.dart';
 import '../profile/profile_controller.dart';
 import '../theme/theme_context.dart';
 import '../theme/theme_controller.dart';
+import 'backup_restore_section.dart';
 
 /// Appearance settings: the brand [AccentTheme] (chrome only) and the
 /// [ThemeChoice] brightness axis. Both are driven by the [ThemeController], so
@@ -27,6 +28,7 @@ class SettingsScreen extends StatelessWidget {
     this.currencyController,
     this.localeController,
     this.onEraseAllData,
+    this.backup,
   });
 
   final ThemeController controller;
@@ -42,6 +44,10 @@ class SettingsScreen extends StatelessWidget {
   /// with a type-to-confirm Erase-all-data flow that calls this. When null the
   /// section is hidden (focused theme tests are unaffected).
   final Future<void> Function()? onEraseAllData;
+
+  /// Backup & restore (#26). When supplied, the Backup section renders; null in
+  /// focused theme tests, which then hide it.
+  final BackupSectionConfig? backup;
 
   @override
   Widget build(BuildContext context) {
@@ -111,6 +117,10 @@ class SettingsScreen extends StatelessWidget {
                   ),
               ],
             ),
+            if (backup != null) ...[
+              SizedBox(height: context.spacing.xl),
+              BackupRestoreSection(config: backup!),
+            ],
             if (onEraseAllData != null) ...[
               SizedBox(height: context.spacing.xl),
               _SectionHeader(l10n.settingsData),
