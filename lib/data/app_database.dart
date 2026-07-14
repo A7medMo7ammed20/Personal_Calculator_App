@@ -47,6 +47,15 @@ class AppDatabase {
     _db = null;
   }
 
+  /// Wipes every table to a genuine first-run state (Erase all data, ADR 0009).
+  /// Schema is left intact; only rows are dropped. Irreversible.
+  Future<void> eraseAll() async {
+    final db = await open();
+    await db.delete('entries');
+    await db.delete('contacts');
+    await db.delete('settings');
+  }
+
   Future<void> _onConfigure(Database db) async {
     // Entries cascade-delete with their Contact; keep foreign keys enforced.
     await db.execute('PRAGMA foreign_keys = ON');

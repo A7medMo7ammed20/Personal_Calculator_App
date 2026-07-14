@@ -82,4 +82,31 @@ void main() {
     expect(row['archived'], 0);
     expect(await db.getVersion(), 5);
   });
+
+  test('eraseAll wipes every table but keeps the schema at v5', () async {
+    final appDb = AppDatabase(
+      factory: databaseFactoryFfi,
+      path: inMemoryDatabasePath,
+    );
+    addTearDown(appDb.close);
+    final db = await appDb.open();
+
+    final contactId = await db.insert('contacts', {'name': 'Ali'});
+    await db.insert('entries', {
+      'contact_id': contactId,
+      'amount': 100.0,
+      'direction': 'owedToMe',
+      'currency': 'SAR',
+      'created_at': 0,
+    });
+    await db.insert('settings', {'key': 'accent', 'value': 'teal'});
+
+    await appDb.eraseAll();
+
+    expect(await db.query('entries'), isEmpty);
+    expect(await db.query('contacts'), isEmpty);
+    expect(await db.query('settings'), isEmpty);
+    // Schema is intact — a subsequent open still reports v5.
+    expect(await db.getVersion(), 5);
+  });
 }
