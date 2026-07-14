@@ -243,5 +243,91 @@
   "whatsappShare": "WhatsApp",
   "@whatsappShare": { "description": "Label/tooltip for the WhatsApp balance-nudge action on the Contact screen (#11)." },
   "callContact": "Call",
-  "@callContact": { "description": "Accessibility label/tooltip for tapping a Contact's phone number to open the dialer (#11)." }
+  "@callContact": { "description": "Accessibility label/tooltip for tapping a Contact's phone number to open the dialer (#11)." },
+  "statementPeriod": "Period",
+  "@statementPeriod": { "description": "PDF header label preceding the statement's period value (#25)." },
+  "resetAccount": "Reset account",
+  "@resetAccount": { "description": "Label for the Reset account action in the Contact overflow menu (#25)." },
+  "reset": "Reset",
+  "@reset": { "description": "Confirm button label for the Reset account dialog (#25)." },
+  "resetAccountTitle": "Reset account?",
+  "@resetAccountTitle": { "description": "Confirmation dialog title before resetting (settling) a contact's account (#25)." },
+  "resetAccountMessage": "A settling entry of {amount} will be added so the balance reads settled. Your history is kept.",
+  "@resetAccountMessage": {
+    "description": "Confirmation dialog body naming the settling entry amount that will be added to reset the account (#25).",
+    "placeholders": {
+      "amount": { "type": "String", "example": "150.00 ر.س" }
+    }
+  },
+  "settleEntryDescription": "Settlement",
+  "@settleEntryDescription": { "description": "Description text stamped on the balancing entry created by Reset account (#25)." },
+  "archive": "Archive",
+  "@archive": { "description": "Label for the Archive contact action (#25)." },
+  "unarchive": "Unarchive",
+  "@unarchive": { "description": "Label for the Unarchive contact action (#25)." },
+  "archivedTitle": "Archived",
+  "@archivedTitle": { "description": "Title of the Archived contacts screen (#25)." },
+  "archiveContactTitle": "Archive contact?",
+  "@archiveContactTitle": { "description": "Confirmation dialog title before archiving a contact (#25)." },
+  "archiveContactMessage": "{name} will be set aside and leave your list, totals and analysis.",
+  "@archiveContactMessage": {
+    "description": "Confirmation dialog body explaining that archiving removes the contact from lists, totals and analysis (#25).",
+    "placeholders": {
+      "name": { "type": "String", "example": "Ali" }
+    }
+  },
+  "archiveOutstandingOwedToMe": "{name} still owes you {amount}. Archive anyway?",
+  "@archiveOutstandingOwedToMe": {
+    "description": "Soft-gate warning shown before archiving a contact who still owes the user money (#25).",
+    "placeholders": {
+      "name": { "type": "String", "example": "Ali" },
+      "amount": { "type": "String", "example": "150.00 ر.س" }
+    }
+  },
+  "archiveOutstandingOwedByMe": "You still owe {name} {amount}. Archive anyway?",
+  "@archiveOutstandingOwedByMe": {
+    "description": "Soft-gate warning shown before archiving a contact the user still owes money to (#25).",
+    "placeholders": {
+      "name": { "type": "String", "example": "Ali" },
+      "amount": { "type": "String", "example": "150.00 ر.س" }
+    }
+  },
+  "archivedEmpty": "No archived contacts",
+  "@archivedEmpty": { "description": "Placeholder shown on the Archived screen when there are no archived contacts (#25)." },
+  "contactArchived": "Contact archived",
+  "@contactArchived": { "description": "SnackBar shown after a contact is archived (#25)." },
+  "contactUnarchived": "Contact restored",
+  "@contactUnarchived": { "description": "SnackBar shown after a contact is restored from Archived (#25)." },
+  "quickAddSearchHint": "Search or add a contact",
+  "@quickAddSearchHint": { "description": "Hint text in the Add معاملة inline contact search field (#25)." },
+  "quickAddCreateContact": "Add “{name}” as a new contact",
+  "@quickAddCreateContact": {
+    "description": "Tile label offering to create a new contact from the Add معاملة search query when no contact matches (#25).",
+    "placeholders": {
+      "name": { "type": "String", "example": "Zed" }
+    }
+  },
+  "contactRequired": "Choose or add a contact",
+  "@contactRequired": { "description": "Validation message shown when saving Add معاملة without choosing a contact (#25)." },
+  "firstEntrySection": "First entry (optional)",
+  "@firstEntrySection": { "description": "Section header for the optional opening entry on the Add contact screen (#25)." },
+  "settingsData": "Data",
+  "@settingsData": { "description": "Settings section header for data-lifecycle actions — erase all data (#25)." },
+  "eraseAllData": "Erase all data",
+  "@eraseAllData": { "description": "Label for the Erase all data action in Settings (#25)." },
+  "eraseAllDataSubtitle": "Delete everything and start fresh",
+  "@eraseAllDataSubtitle": { "description": "Subtitle under Erase all data describing the effect (#25)." },
+  "eraseAllDataTitle": "Erase all data?",
+  "@eraseAllDataTitle": { "description": "Confirmation dialog title before erasing all data (#25)." },
+  "eraseAllDataMessage": "This permanently deletes all contacts, entries, your profile and settings. Type {word} to confirm — this cannot be undone.",
+  "@eraseAllDataMessage": {
+    "description": "Confirmation dialog body for Erase all data, naming the type-to-confirm word (#25).",
+    "placeholders": {
+      "word": { "type": "String", "example": "ERASE" }
+    }
+  },
+  "eraseConfirmWord": "ERASE",
+  "@eraseConfirmWord": { "description": "The exact word the user must type to confirm Erase all data (#25)." },
+  "erase": "Erase",
+  "@erase": { "description": "Confirm button label for the Erase all data dialog (#25)." }
 }

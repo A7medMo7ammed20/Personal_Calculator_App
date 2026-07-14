@@ -649,6 +649,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Call'**
   String get callContact;
+
+  /// PDF header label preceding the statement's period value (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get statementPeriod;
+
+  /// Label for the Reset account action in the Contact overflow menu (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Reset account'**
+  String get resetAccount;
+
+  /// Confirm button label for the Reset account dialog (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get reset;
+
+  /// Confirmation dialog title before resetting (settling) a contact's account (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Reset account?'**
+  String get resetAccountTitle;
+
+  /// Confirmation dialog body naming the settling entry amount that will be added to reset the account (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'A settling entry of {amount} will be added so the balance reads settled. Your history is kept.'**
+  String resetAccountMessage(String amount);
+
+  /// Description text stamped on the balancing entry created by Reset account (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement'**
+  String get settleEntryDescription;
+
+  /// Label for the Archive contact action (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get archive;
+
+  /// Label for the Unarchive contact action (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Unarchive'**
+  String get unarchive;
+
+  /// Title of the Archived contacts screen (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get archivedTitle;
+
+  /// Confirmation dialog title before archiving a contact (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Archive contact?'**
+  String get archiveContactTitle;
+
+  /// Confirmation dialog body explaining that archiving removes the contact from lists, totals and analysis (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'{name} will be set aside and leave your list, totals and analysis.'**
+  String archiveContactMessage(String name);
+
+  /// Soft-gate warning shown before archiving a contact who still owes the user money (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'{name} still owes you {amount}. Archive anyway?'**
+  String archiveOutstandingOwedToMe(String name, String amount);
+
+  /// Soft-gate warning shown before archiving a contact the user still owes money to (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'You still owe {name} {amount}. Archive anyway?'**
+  String archiveOutstandingOwedByMe(String name, String amount);
+
+  /// Placeholder shown on the Archived screen when there are no archived contacts (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'No archived contacts'**
+  String get archivedEmpty;
+
+  /// SnackBar shown after a contact is archived (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Contact archived'**
+  String get contactArchived;
+
+  /// SnackBar shown after a contact is restored from Archived (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Contact restored'**
+  String get contactUnarchived;
+
+  /// Hint text in the Add معاملة inline contact search field (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Search or add a contact'**
+  String get quickAddSearchHint;
+
+  /// Tile label offering to create a new contact from the Add معاملة search query when no contact matches (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Add “{name}” as a new contact'**
+  String quickAddCreateContact(String name);
+
+  /// Validation message shown when saving Add معاملة without choosing a contact (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Choose or add a contact'**
+  String get contactRequired;
+
+  /// Section header for the optional opening entry on the Add contact screen (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'First entry (optional)'**
+  String get firstEntrySection;
+
+  /// Settings section header for data-lifecycle actions — erase all data (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Data'**
+  String get settingsData;
+
+  /// Label for the Erase all data action in Settings (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Erase all data'**
+  String get eraseAllData;
+
+  /// Subtitle under Erase all data describing the effect (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Delete everything and start fresh'**
+  String get eraseAllDataSubtitle;
+
+  /// Confirmation dialog title before erasing all data (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Erase all data?'**
+  String get eraseAllDataTitle;
+
+  /// Confirmation dialog body for Erase all data, naming the type-to-confirm word (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'This permanently deletes all contacts, entries, your profile and settings. Type {word} to confirm — this cannot be undone.'**
+  String eraseAllDataMessage(String word);
+
+  /// The exact word the user must type to confirm Erase all data (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'ERASE'**
+  String get eraseConfirmWord;
+
+  /// Confirm button label for the Erase all data dialog (#25).
+  ///
+  /// In en, this message translates to:
+  /// **'Erase'**
+  String get erase;
 }
 
 class _AppLocalizationsDelegate

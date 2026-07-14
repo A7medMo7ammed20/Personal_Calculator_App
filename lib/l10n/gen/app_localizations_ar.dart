@@ -305,4 +305,97 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get callContact => 'اتصال';
+
+  @override
+  String get statementPeriod => 'الفترة';
+
+  @override
+  String get resetAccount => 'تصفير الحساب';
+
+  @override
+  String get reset => 'تصفير';
+
+  @override
+  String get resetAccountTitle => 'تصفير الحساب؟';
+
+  @override
+  String resetAccountMessage(String amount) {
+    return 'ستُضاف معاملة تسوية بقيمة $amount ليصبح الرصيد مسدَّدًا. يبقى سجلّك كما هو.';
+  }
+
+  @override
+  String get settleEntryDescription => 'تسوية';
+
+  @override
+  String get archive => 'أرشفة';
+
+  @override
+  String get unarchive => 'إلغاء الأرشفة';
+
+  @override
+  String get archivedTitle => 'الأرشيف';
+
+  @override
+  String get archiveContactTitle => 'أرشفة جهة الاتصال؟';
+
+  @override
+  String archiveContactMessage(String name) {
+    return 'سيتم وضع $name جانبًا وسيغادر قائمتك وإجمالياتك وتحليلك.';
+  }
+
+  @override
+  String archiveOutstandingOwedToMe(String name, String amount) {
+    return '$name لا يزال مدينًا لك بـ $amount. أرشفة على أي حال؟';
+  }
+
+  @override
+  String archiveOutstandingOwedByMe(String name, String amount) {
+    return 'لا تزال مدينًا لـ $name بـ $amount. أرشفة على أي حال؟';
+  }
+
+  @override
+  String get archivedEmpty => 'لا توجد جهات اتصال مؤرشفة';
+
+  @override
+  String get contactArchived => 'تمت أرشفة جهة الاتصال';
+
+  @override
+  String get contactUnarchived => 'تمت استعادة جهة الاتصال';
+
+  @override
+  String get quickAddSearchHint => 'ابحث أو أضف جهة اتصال';
+
+  @override
+  String quickAddCreateContact(String name) {
+    return 'إضافة «$name» كجهة اتصال جديدة';
+  }
+
+  @override
+  String get contactRequired => 'اختر أو أضف جهة اتصال';
+
+  @override
+  String get firstEntrySection => 'أول معاملة (اختياري)';
+
+  @override
+  String get settingsData => 'البيانات';
+
+  @override
+  String get eraseAllData => 'مسح جميع البيانات';
+
+  @override
+  String get eraseAllDataSubtitle => 'حذف كل شيء والبدء من جديد';
+
+  @override
+  String get eraseAllDataTitle => 'مسح جميع البيانات؟';
+
+  @override
+  String eraseAllDataMessage(String word) {
+    return 'سيؤدي هذا إلى حذف جميع جهات الاتصال والمعاملات وملفك وإعداداتك نهائيًا. اكتب $word للتأكيد — لا يمكن التراجع.';
+  }
+
+  @override
+  String get eraseConfirmWord => 'مسح';
+
+  @override
+  String get erase => 'مسح';
 }

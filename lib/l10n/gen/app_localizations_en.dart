@@ -304,4 +304,97 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get callContact => 'Call';
+
+  @override
+  String get statementPeriod => 'Period';
+
+  @override
+  String get resetAccount => 'Reset account';
+
+  @override
+  String get reset => 'Reset';
+
+  @override
+  String get resetAccountTitle => 'Reset account?';
+
+  @override
+  String resetAccountMessage(String amount) {
+    return 'A settling entry of $amount will be added so the balance reads settled. Your history is kept.';
+  }
+
+  @override
+  String get settleEntryDescription => 'Settlement';
+
+  @override
+  String get archive => 'Archive';
+
+  @override
+  String get unarchive => 'Unarchive';
+
+  @override
+  String get archivedTitle => 'Archived';
+
+  @override
+  String get archiveContactTitle => 'Archive contact?';
+
+  @override
+  String archiveContactMessage(String name) {
+    return '$name will be set aside and leave your list, totals and analysis.';
+  }
+
+  @override
+  String archiveOutstandingOwedToMe(String name, String amount) {
+    return '$name still owes you $amount. Archive anyway?';
+  }
+
+  @override
+  String archiveOutstandingOwedByMe(String name, String amount) {
+    return 'You still owe $name $amount. Archive anyway?';
+  }
+
+  @override
+  String get archivedEmpty => 'No archived contacts';
+
+  @override
+  String get contactArchived => 'Contact archived';
+
+  @override
+  String get contactUnarchived => 'Contact restored';
+
+  @override
+  String get quickAddSearchHint => 'Search or add a contact';
+
+  @override
+  String quickAddCreateContact(String name) {
+    return 'Add “$name” as a new contact';
+  }
+
+  @override
+  String get contactRequired => 'Choose or add a contact';
+
+  @override
+  String get firstEntrySection => 'First entry (optional)';
+
+  @override
+  String get settingsData => 'Data';
+
+  @override
+  String get eraseAllData => 'Erase all data';
+
+  @override
+  String get eraseAllDataSubtitle => 'Delete everything and start fresh';
+
+  @override
+  String get eraseAllDataTitle => 'Erase all data?';
+
+  @override
+  String eraseAllDataMessage(String word) {
+    return 'This permanently deletes all contacts, entries, your profile and settings. Type $word to confirm — this cannot be undone.';
+  }
+
+  @override
+  String get eraseConfirmWord => 'ERASE';
+
+  @override
+  String get erase => 'Erase';
 }

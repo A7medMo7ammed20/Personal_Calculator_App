@@ -145,3 +145,8 @@ A whole-person "set aside" state for a [[Contact]] — spans **both** currencies
 Permanently removes a [[Contact]] and cascade-deletes all their [[Entry]] rows in both currencies (undoable only via the immediate Snackbar). The hard end of the contact lifecycle: [[Reset account]] keeps the person and their history, [[Archive]] hides the person but keeps the data, delete destroys both.
 
 - Arabic: حذف
+
+### Erase all data
+A one-way **factory reset** from Settings: wipes every [[Contact]] and [[Entry]], the [[Profile]], and all settings (accent, brightness, default [[Currency]], [[App lock]]) so the next launch is a genuine first-run. **Not** the [[Period filter]] (a time-window *visibility* filter — the word "filter" the user first reached for) and **not** [[Reset account]] (which zeros one Contact's balance): this drops the whole database. Irreversible — there is no [[Backup]] restore yet — so it is guarded by a **type-to-confirm** (the user types مسح to enable the button).
+
+- Arabic: مسح جميع البيانات / بدء من جديد
