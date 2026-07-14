@@ -219,6 +219,8 @@ class _HomeScreenState extends State<HomeScreen> {
             builder: (_) => SettingsScreen(
               controller: widget.themeController!,
               profileController: widget.profileController,
+              currencyController: widget.currencyController,
+              localeController: widget.localeController,
             ),
           ),
         );

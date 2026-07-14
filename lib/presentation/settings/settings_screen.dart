@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/accent_theme.dart';
+import '../../domain/currency.dart';
+import '../../domain/language_choice.dart';
 import '../../domain/theme_choice.dart';
 import '../../l10n/gen/app_localizations.dart';
+import '../currency/currency_controller.dart';
+import '../locale/locale_controller.dart';
 import '../profile/profile_controller.dart';
 import '../theme/theme_context.dart';
 import '../theme/theme_controller.dart';
@@ -20,10 +24,18 @@ class SettingsScreen extends StatelessWidget {
     super.key,
     required this.controller,
     this.profileController,
+    this.currencyController,
+    this.localeController,
   });
 
   final ThemeController controller;
   final ProfileController? profileController;
+
+  /// Drives the default-currency control (ADR 0007). The Preferences section
+  /// renders only when both this and [localeController] are supplied — focused
+  /// theme tests can still pump the screen bare.
+  final CurrencyController? currencyController;
+  final LocaleController? localeController;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +43,11 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: ListenableBuilder(
-        listenable: controller,
+        listenable: Listenable.merge([
+          controller,
+          if (currencyController != null) currencyController!,
+          if (localeController != null) localeController!,
+        ]),
         builder: (context, _) => ListView(
           padding: EdgeInsets.all(context.spacing.lg),
           children: [
@@ -39,22 +55,15 @@ class SettingsScreen extends StatelessWidget {
               _ProfileSection(controller: profileController!),
               SizedBox(height: context.spacing.xl),
             ],
-            _SectionHeader(l10n.settingsAccent),
-            SizedBox(height: context.spacing.md),
-            Wrap(
-              spacing: context.spacing.md,
-              runSpacing: context.spacing.md,
-              children: [
-                for (final accent in AccentTheme.values)
-                  _AccentSwatch(
-                    accent: accent,
-                    label: _accentName(l10n, accent),
-                    selected: controller.accent == accent,
-                    onTap: () => controller.setAccent(accent),
-                  ),
-              ],
-            ),
-            SizedBox(height: context.spacing.xl),
+            if (currencyController != null && localeController != null) ...[
+              _SectionHeader(l10n.settingsPreferences),
+              SizedBox(height: context.spacing.md),
+              _PreferencesSection(
+                currencyController: currencyController!,
+                localeController: localeController!,
+              ),
+              SizedBox(height: context.spacing.xl),
+            ],
             _SectionHeader(l10n.settingsAppearance),
             SizedBox(height: context.spacing.md),
             SegmentedButton<ThemeChoice>(
@@ -79,6 +88,22 @@ class SettingsScreen extends StatelessWidget {
               showSelectedIcon: false,
               onSelectionChanged: (selection) =>
                   controller.setThemeChoice(selection.first),
+            ),
+            SizedBox(height: context.spacing.xl),
+            _SectionHeader(l10n.settingsAccent),
+            SizedBox(height: context.spacing.md),
+            Wrap(
+              spacing: context.spacing.md,
+              runSpacing: context.spacing.md,
+              children: [
+                for (final accent in AccentTheme.values)
+                  _AccentSwatch(
+                    accent: accent,
+                    label: _accentName(l10n, accent),
+                    selected: controller.accent == accent,
+                    onTap: () => controller.setAccent(accent),
+                  ),
+              ],
             ),
           ],
         ),
@@ -181,6 +206,72 @@ class _ProfileSectionState extends State<_ProfileSection> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The behavioral defaults (ADR 0007): a default-currency segmented control and
+/// an app-language segmented control (endonym labels). Both write through their
+/// controllers, which persist and live-apply. Segments carry explicit keys —
+/// their plain SAR/YER/System texts collide with the bottom lens and the theme
+/// "System" segment.
+class _PreferencesSection extends StatelessWidget {
+  const _PreferencesSection({
+    required this.currencyController,
+    required this.localeController,
+  });
+
+  final CurrencyController currencyController;
+  final LocaleController localeController;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final spacing = context.spacing;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l10n.settingsDefaultCurrency,
+            style: Theme.of(context).textTheme.bodyMedium),
+        SizedBox(height: spacing.sm),
+        SegmentedButton<Currency>(
+          segments: [
+            for (final currency in Currency.values)
+              ButtonSegment(
+                value: currency,
+                label: Text(currency.code, key: Key('currency-${currency.code}')),
+              ),
+          ],
+          selected: {currencyController.defaultCurrency},
+          showSelectedIcon: false,
+          onSelectionChanged: (selection) =>
+              currencyController.setDefault(selection.first),
+        ),
+        SizedBox(height: spacing.lg),
+        Text(l10n.settingsLanguage,
+            style: Theme.of(context).textTheme.bodyMedium),
+        SizedBox(height: spacing.sm),
+        SegmentedButton<LanguageChoice>(
+          segments: [
+            ButtonSegment(
+              value: LanguageChoice.system,
+              label: Text(l10n.languageSystem, key: const Key('language-system')),
+            ),
+            ButtonSegment(
+              value: LanguageChoice.arabic,
+              label: Text(l10n.languageArabic, key: const Key('language-ar')),
+            ),
+            ButtonSegment(
+              value: LanguageChoice.english,
+              label: Text(l10n.languageEnglish, key: const Key('language-en')),
+            ),
+          ],
+          selected: {localeController.languageChoice},
+          showSelectedIcon: false,
+          onSelectionChanged: (selection) =>
+              localeController.setLanguageChoice(selection.first),
+        ),
+      ],
     );
   }
 }
