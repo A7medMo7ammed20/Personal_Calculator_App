@@ -227,5 +227,21 @@
   "statementClosingBalance": "Closing balance",
   "@statementClosingBalance": { "description": "PDF label for the final all-time balance of the statement (#10)." },
   "statementTotal": "Total",
-  "@statementTotal": { "description": "PDF label for the gross directional totals row (#10)." }
+  "@statementTotal": { "description": "PDF label for the gross directional totals row (#10)." },
+  "settingsPreferences": "Preferences",
+  "@settingsPreferences": { "description": "Settings section header for app-wide behavioral defaults — default currency + language (#12)." },
+  "settingsDefaultCurrency": "Default currency",
+  "@settingsDefaultCurrency": { "description": "Label for the default-currency segmented control — which lens the app opens on (#12)." },
+  "settingsLanguage": "Language",
+  "@settingsLanguage": { "description": "Label for the app-language segmented control (#12)." },
+  "languageSystem": "System",
+  "@languageSystem": { "description": "Language option: follow the device language (default) (#12)." },
+  "languageArabic": "العربية",
+  "@languageArabic": { "description": "Language option shown as an endonym — Arabic in its own script (#12)." },
+  "languageEnglish": "English",
+  "@languageEnglish": { "description": "Language option shown as an endonym — English in its own script (#12)." },
+  "whatsappShare": "WhatsApp",
+  "@whatsappShare": { "description": "Label/tooltip for the WhatsApp balance-nudge action on the Contact screen (#11)." },
+  "callContact": "Call",
+  "@callContact": { "description": "Accessibility label/tooltip for tapping a Contact's phone number to open the dialer (#11)." }
 }

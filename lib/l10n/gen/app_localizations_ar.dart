@@ -281,4 +281,28 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get statementTotal => 'الإجمالي';
+
+  @override
+  String get settingsPreferences => 'التفضيلات';
+
+  @override
+  String get settingsDefaultCurrency => 'العملة الافتراضية';
+
+  @override
+  String get settingsLanguage => 'اللغة';
+
+  @override
+  String get languageSystem => 'حسب النظام';
+
+  @override
+  String get languageArabic => 'العربية';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get whatsappShare => 'واتساب';
+
+  @override
+  String get callContact => 'اتصال';
 }

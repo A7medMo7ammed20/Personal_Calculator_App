@@ -601,6 +601,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total'**
   String get statementTotal;
+
+  /// Settings section header for app-wide behavioral defaults — default currency + language (#12).
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get settingsPreferences;
+
+  /// Label for the default-currency segmented control — which lens the app opens on (#12).
+  ///
+  /// In en, this message translates to:
+  /// **'Default currency'**
+  String get settingsDefaultCurrency;
+
+  /// Label for the app-language segmented control (#12).
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsLanguage;
+
+  /// Language option: follow the device language (default) (#12).
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get languageSystem;
+
+  /// Language option shown as an endonym — Arabic in its own script (#12).
+  ///
+  /// In en, this message translates to:
+  /// **'العربية'**
+  String get languageArabic;
+
+  /// Language option shown as an endonym — English in its own script (#12).
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageEnglish;
+
+  /// Label/tooltip for the WhatsApp balance-nudge action on the Contact screen (#11).
+  ///
+  /// In en, this message translates to:
+  /// **'WhatsApp'**
+  String get whatsappShare;
+
+  /// Accessibility label/tooltip for tapping a Contact's phone number to open the dialer (#11).
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get callContact;
 }
 
 class _AppLocalizationsDelegate

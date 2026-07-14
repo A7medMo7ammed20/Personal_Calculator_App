@@ -280,4 +280,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get statementTotal => 'Total';
+
+  @override
+  String get settingsPreferences => 'Preferences';
+
+  @override
+  String get settingsDefaultCurrency => 'Default currency';
+
+  @override
+  String get settingsLanguage => 'Language';
+
+  @override
+  String get languageSystem => 'System';
+
+  @override
+  String get languageArabic => 'العربية';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get whatsappShare => 'WhatsApp';
+
+  @override
+  String get callContact => 'Call';
 }

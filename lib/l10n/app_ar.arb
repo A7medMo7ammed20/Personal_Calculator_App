@@ -83,5 +83,13 @@
   "statementBalanceColumn": "الرصيد",
   "statementOpeningBalance": "الرصيد الافتتاحي",
   "statementClosingBalance": "الرصيد الختامي",
-  "statementTotal": "الإجمالي"
+  "statementTotal": "الإجمالي",
+  "settingsPreferences": "التفضيلات",
+  "settingsDefaultCurrency": "العملة الافتراضية",
+  "settingsLanguage": "اللغة",
+  "languageSystem": "حسب النظام",
+  "languageArabic": "العربية",
+  "languageEnglish": "English",
+  "whatsappShare": "واتساب",
+  "callContact": "اتصال"
 }
