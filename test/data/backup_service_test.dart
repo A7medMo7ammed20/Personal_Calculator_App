@@ -78,4 +78,64 @@ void main() {
       expect(list[i].createdAt.isAfter(list[i + 1].createdAt), isTrue);
     }
   });
+
+  test('round-trip: export from A restores exactly into B', () async {
+    // Seed database A.
+    final a = dbAt('a.db');
+    addTearDown(a.close);
+    final da = await a.open();
+    final aliId = await da.insert('contacts', {'name': 'Ali'});
+    await da.insert('entries', {
+      'contact_id': aliId, 'amount': 300.0, 'direction': 'owedToMe',
+      'currency': 'YER', 'created_at': 111,
+    });
+    await da.insert('settings', {'key': 'accent', 'value': 'plum'});
+    await da.insert('settings', {'key': 'profile_name', 'value': 'Ahmed'});
+    final file = await serviceFor(a).export();
+
+    // Restore into an empty database B.
+    final b = dbAt('b.db');
+    addTearDown(b.close);
+    await b.open();
+    final result = await serviceFor(b).restore(file);
+
+    expect(result, RestoreResult.success);
+    final db = await b.open(); // reopen reads the swapped file
+    expect((await db.query('contacts')).single['name'], 'Ali');
+    final entry = (await db.query('entries')).single;
+    expect(entry['amount'], 300.0);
+    expect(entry['currency'], 'YER');
+    expect(
+      (await db.query('settings', where: 'key = ?', whereArgs: ['accent']))
+          .single['value'],
+      'plum',
+    );
+    expect(
+      (await db.query('settings', where: 'key = ?', whereArgs: ['profile_name']))
+          .single['value'],
+      'Ahmed',
+    );
+  });
+
+  test('restore snapshots the current data into the ring before swapping', () async {
+    final a = dbAt('a.db');
+    addTearDown(a.close);
+    await (await a.open()).insert('contacts', {'name': 'FromBackup'});
+    final file = await serviceFor(a).export();
+
+    final b = dbAt('b.db');
+    addTearDown(b.close);
+    await (await b.open()).insert('contacts', {'name': 'CurrentB'});
+    final service = serviceFor(b);
+
+    await service.restore(file);
+
+    // The pre-swap snapshot of B is now the newest ring entry.
+    final ring = await service.listAutoBackups();
+    expect(ring, isNotEmpty);
+    final snap = await databaseFactoryFfi.openDatabase(ring.first.file.path,
+        options: OpenDatabaseOptions(readOnly: true, singleInstance: false));
+    addTearDown(snap.close);
+    expect((await snap.query('contacts')).single['name'], 'CurrentB');
+  });
 }

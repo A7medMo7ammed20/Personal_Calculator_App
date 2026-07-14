@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:sqflite/sqflite.dart' show OpenDatabaseOptions, Database, Sqflite;
 
 import 'app_database.dart';
 
@@ -70,6 +71,57 @@ class BackupService {
     return entries;
   }
 
+  /// Full-replace restore (ADR 0010). Validates [file] in a temporary read-only
+  /// handle FIRST — a foreign/corrupt file or a newer-schema backup is refused
+  /// before the live database is touched. On success it snapshots the current
+  /// data into the ring (so the restore is undoable), then swaps the file in and
+  /// leaves the database CLOSED for the caller's reload helper to reopen.
+  Future<RestoreResult> restore(File file) async {
+    final verdict = await _validate(file);
+    if (verdict != RestoreResult.success) return verdict;
+
+    await autoBackup(); // snapshot current data before the swap
+    final livePath = await appDatabase.resolvedPath();
+    await appDatabase.close();
+    // Remove stale WAL/SHM sidecars so the swapped-in file reopens cleanly.
+    for (final suffix in const ['-wal', '-shm']) {
+      final side = File('$livePath$suffix');
+      if (await side.exists()) await side.delete();
+    }
+    await file.copy(livePath);
+    return RestoreResult.success;
+  }
+
+  /// Opens [file] read-only and checks it is a Daftar database no newer than us.
+  Future<RestoreResult> _validate(File file) async {
+    if (!await file.exists()) return RestoreResult.notABackup;
+    Database? probe;
+    try {
+      probe = await appDatabase.factory.openDatabase(
+        file.path,
+        options: OpenDatabaseOptions(readOnly: true, singleInstance: false),
+      );
+      final version = Sqflite.firstIntValue(
+              await probe.rawQuery('PRAGMA user_version')) ??
+          0;
+      if (version > AppDatabase.schemaVersion) return RestoreResult.newerVersion;
+      final tables = (await probe.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table' "
+        "AND name IN ('contacts','entries','settings')",
+      ))
+          .map((r) => r['name'] as String)
+          .toSet();
+      if (!tables.containsAll(const {'contacts', 'entries', 'settings'})) {
+        return RestoreResult.notABackup;
+      }
+      return RestoreResult.success;
+    } catch (_) {
+      return RestoreResult.notABackup; // not a SQLite file at all
+    } finally {
+      await probe?.close();
+    }
+  }
+
   /// Close the live database (checkpoints WAL into a consistent file), copy that
   /// file to [destPath], then reopen so the app keeps working.
   Future<void> _snapshotTo(String destPath) async {
@@ -89,6 +141,10 @@ class BackupService {
         '${two(t.hour)}${two(t.minute)}${two(t.second)}';
   }
 }
+
+/// The outcome of a restore attempt (ADR 0010). Only [success] touches the live
+/// database; every other value leaves it exactly as it was.
+enum RestoreResult { success, notABackup, newerVersion, failure }
 
 /// One entry in the auto-backup ring: the snapshot file and when it was taken.
 class AutoBackupEntry {
