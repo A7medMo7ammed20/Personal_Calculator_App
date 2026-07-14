@@ -28,6 +28,7 @@ Future<void> main() async {
   await currencyController.load();
   await localeController.load();
   runApp(DebtLedgerApp(
+    appDatabase: appDatabase,
     contactRepository: contactRepository,
     entryRepository: entryRepository,
     themeController: themeController,

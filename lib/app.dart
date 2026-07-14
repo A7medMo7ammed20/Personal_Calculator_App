@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:debt_ledger/l10n/gen/app_localizations.dart';
 
 import 'branding/daftar_splash.dart';
+import 'data/app_database.dart';
 import 'data/contact_repository.dart';
 import 'data/entry_repository.dart';
 import 'presentation/currency/currency_controller.dart';
@@ -18,6 +19,7 @@ import 'presentation/theme/theme_controller.dart';
 class DebtLedgerApp extends StatelessWidget {
   const DebtLedgerApp({
     super.key,
+    required this.appDatabase,
     required this.contactRepository,
     required this.entryRepository,
     required this.themeController,
@@ -26,12 +28,25 @@ class DebtLedgerApp extends StatelessWidget {
     required this.localeController,
   });
 
+  final AppDatabase appDatabase;
   final ContactRepository contactRepository;
   final EntryRepository entryRepository;
   final ThemeController themeController;
   final ProfileController profileController;
   final CurrencyController currencyController;
   final LocaleController localeController;
+
+  /// Erase all data (#25): wipe every table, then reload each controller so the
+  /// app snaps back to its genuine first-run state — default theme, language,
+  /// currency and no profile. The currency reload notifies HomeScreen, which
+  /// refetches the (now empty) ledger.
+  Future<void> _eraseAllData() async {
+    await appDatabase.eraseAll();
+    await themeController.load();
+    await profileController.load();
+    await currencyController.load();
+    await localeController.load();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +93,7 @@ class DebtLedgerApp extends StatelessWidget {
                   themeController: themeController,
                   profileController: profileController,
                   localeController: localeController,
+                  onEraseAllData: _eraseAllData,
                 ),
               ),
             ),

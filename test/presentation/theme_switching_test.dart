@@ -43,6 +43,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(DebtLedgerApp(
+      appDatabase: appDb,
       contactRepository: ContactRepository(appDb),
       entryRepository: EntryRepository(appDb),
       themeController: controller,

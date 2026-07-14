@@ -44,6 +44,7 @@ class HomeScreen extends StatefulWidget {
     this.themeController,
     this.profileController,
     this.localeController,
+    this.onEraseAllData,
   });
 
   final ContactRepository repository;
@@ -67,6 +68,11 @@ class HomeScreen extends StatefulWidget {
   /// Drives the language segmented control in Settings. Optional, like
   /// [themeController]; the real app supplies it.
   final LocaleController? localeController;
+
+  /// Factory reset (#25), threaded down to Settings' Erase-all-data flow. The
+  /// app wires it to wipe the DB and reload every controller to first-run; null
+  /// in focused tests, which then hide the Data section.
+  final Future<void> Function()? onEraseAllData;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -228,6 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
               profileController: widget.profileController,
               currencyController: widget.currencyController,
               localeController: widget.localeController,
+              onEraseAllData: widget.onEraseAllData,
             ),
           ),
         );

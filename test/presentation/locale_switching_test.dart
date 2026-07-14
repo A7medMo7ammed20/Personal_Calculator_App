@@ -33,6 +33,7 @@ void main() {
     final currency = CurrencyController(settings);
     await currency.load();
     await tester.pumpWidget(DebtLedgerApp(
+      appDatabase: appDb,
       contactRepository: ContactRepository(appDb),
       entryRepository: EntryRepository(appDb),
       themeController: ThemeController(settings),

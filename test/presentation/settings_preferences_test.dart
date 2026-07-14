@@ -37,6 +37,7 @@ void main() {
 
   Future<void> pumpToHome(WidgetTester tester) async {
     await tester.pumpWidget(DebtLedgerApp(
+      appDatabase: appDb,
       contactRepository: ContactRepository(appDb),
       entryRepository: EntryRepository(appDb),
       themeController: ThemeController(settings),

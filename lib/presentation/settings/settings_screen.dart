@@ -26,6 +26,7 @@ class SettingsScreen extends StatelessWidget {
     this.profileController,
     this.currencyController,
     this.localeController,
+    this.onEraseAllData,
   });
 
   final ThemeController controller;
@@ -36,6 +37,11 @@ class SettingsScreen extends StatelessWidget {
   /// theme tests can still pump the screen bare.
   final CurrencyController? currencyController;
   final LocaleController? localeController;
+
+  /// Factory reset (#25). When supplied, a destructive Data section appears
+  /// with a type-to-confirm Erase-all-data flow that calls this. When null the
+  /// section is hidden (focused theme tests are unaffected).
+  final Future<void> Function()? onEraseAllData;
 
   @override
   Widget build(BuildContext context) {
@@ -105,10 +111,87 @@ class SettingsScreen extends StatelessWidget {
                   ),
               ],
             ),
+            if (onEraseAllData != null) ...[
+              SizedBox(height: context.spacing.xl),
+              _SectionHeader(l10n.settingsData),
+              SizedBox(height: context.spacing.sm),
+              ListTile(
+                key: const Key('erase-all-data'),
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  Icons.delete_forever,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                title: Text(
+                  l10n.eraseAllData,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+                subtitle: Text(l10n.eraseAllDataSubtitle),
+                onTap: () => _confirmErase(context, l10n, onEraseAllData!),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  /// Type-to-confirm factory reset. The confirm button stays disabled until the
+  /// user types [AppLocalizations.eraseConfirmWord]; on confirm it runs [onErase]
+  /// then pops Settings back to home. The gate lives in a [StatefulBuilder] so
+  /// only the dialog rebuilds as the user types.
+  Future<void> _confirmErase(
+    BuildContext context,
+    AppLocalizations l10n,
+    Future<void> Function() onErase,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        var typed = '';
+        return StatefulBuilder(
+          builder: (context, setLocal) => AlertDialog(
+            title: Text(l10n.eraseAllDataTitle),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.eraseAllDataMessage(l10n.eraseConfirmWord)),
+                SizedBox(height: context.spacing.md),
+                TextField(
+                  key: const Key('erase-confirm-field'),
+                  autofocus: true,
+                  onChanged: (value) => setLocal(() => typed = value),
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    hintText: l10n.eraseConfirmWord,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(l10n.cancel),
+              ),
+              TextButton(
+                key: const Key('erase-confirm'),
+                onPressed: typed.trim() == l10n.eraseConfirmWord
+                    ? () => Navigator.of(context).pop(true)
+                    : null,
+                child: Text(l10n.erase),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (confirmed != true) return;
+    await onErase();
+    // Return to home, which has refetched its now-empty data.
+    if (context.mounted && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
   }
 
   String _accentName(AppLocalizations l10n, AccentTheme accent) =>
