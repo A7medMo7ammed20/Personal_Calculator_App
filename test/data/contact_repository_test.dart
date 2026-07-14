@@ -82,6 +82,29 @@ void main() {
     expect(await entries.listByContact(contact.id!), isEmpty);
   });
 
+  test('archiving hides from list() and surfaces in listArchived()', () async {
+    final active = await repo.add(const Contact(name: 'Active'));
+    final gone = await repo.add(const Contact(name: 'Gone'));
+
+    await repo.setArchived(gone.id!, archived: true);
+
+    // list() is active-only; listArchived() is its complement.
+    expect((await repo.list()).map((c) => c.name), ['Active']);
+    final archived = await repo.listArchived();
+    expect(archived.map((c) => c.name), ['Gone']);
+    expect(archived.single.archived, isTrue);
+    expect(archived.single.id, gone.id);
+
+    // Unarchiving restores it to the active list.
+    await repo.setArchived(gone.id!, archived: false);
+    expect(
+      (await repo.list()).map((c) => c.name).toSet(),
+      {'Active', 'Gone'},
+    );
+    expect(await repo.listArchived(), isEmpty);
+    expect(active.id, isNotNull);
+  });
+
   test('entryCount counts entries across all currencies', () async {
     final contacts = ContactRepository(appDb);
     final entries = EntryRepository(appDb);
