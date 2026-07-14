@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../domain/profile.dart';
 import 'app_database.dart';
+import 'backup_dirty_flag.dart';
 
 /// Reads and writes the single local [Profile] in the key/value `settings`
 /// table (the same table [SettingsRepository] uses), so the profile travels
@@ -12,7 +13,7 @@ import 'app_database.dart';
 /// profile yet", which is exactly the signal the first-export name prompt keys
 /// off (see `ensureProfileName`).
 class ProfileRepository {
-  ProfileRepository(this._appDb);
+  ProfileRepository(this._appDb, {BackupDirtyFlag? dirty}) : _dirty = dirty;
 
   static const String table = 'settings';
 
@@ -20,6 +21,7 @@ class ProfileRepository {
   static const String _phoneKey = 'profile_phone';
 
   final AppDatabase _appDb;
+  final BackupDirtyFlag? _dirty;
 
   /// The stored [Profile], or `null` when no non-blank name has been set.
   Future<Profile?> profile() async {
@@ -58,5 +60,6 @@ class ProfileRepository {
       {'key': key, 'value': value},
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    _dirty?.mark();
   }
 }

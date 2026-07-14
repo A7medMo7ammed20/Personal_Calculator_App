@@ -1,21 +1,24 @@
 import '../domain/contact.dart';
 import 'app_database.dart';
+import 'backup_dirty_flag.dart';
 import 'entry_repository.dart';
 
 /// Reads and writes [Contact]s in SQLite.
 ///
 /// Row mapping lives here so the domain [Contact] stays persistence-agnostic.
 class ContactRepository {
-  ContactRepository(this._appDb);
+  ContactRepository(this._appDb, {BackupDirtyFlag? dirty}) : _dirty = dirty;
 
   static const String table = 'contacts';
 
   final AppDatabase _appDb;
+  final BackupDirtyFlag? _dirty;
 
   /// Inserts [contact] and returns it with its assigned [Contact.id].
   Future<Contact> add(Contact contact) async {
     final db = await _appDb.open();
     final id = await db.insert(table, _toRow(contact));
+    _dirty?.mark();
     return contact.copyWith(id: id);
   }
 
@@ -46,6 +49,7 @@ class ContactRepository {
       where: 'id = ?',
       whereArgs: [id],
     );
+    _dirty?.mark();
   }
 
   /// Overwrites the stored row identified by [Contact.id] with [contact]'s
@@ -58,6 +62,7 @@ class ContactRepository {
       where: 'id = ?',
       whereArgs: [contact.id],
     );
+    _dirty?.mark();
   }
 
   /// Deletes the Contact with primary key [id]. Its Entries cascade-delete
@@ -65,6 +70,7 @@ class ContactRepository {
   Future<void> delete(int id) async {
     final db = await _appDb.open();
     await db.delete(table, where: 'id = ?', whereArgs: [id]);
+    _dirty?.mark();
   }
 
   /// How many Entries this Contact has, across all currencies — used to warn

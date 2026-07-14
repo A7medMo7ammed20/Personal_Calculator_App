@@ -3,13 +3,14 @@ import '../domain/currency.dart';
 import '../domain/entry.dart';
 import '../domain/period.dart';
 import 'app_database.dart';
+import 'backup_dirty_flag.dart';
 
 /// Reads and writes [Entry]s in SQLite.
 ///
 /// Row mapping lives here so the domain [Entry] stays persistence-agnostic.
 /// Entries cascade-delete with their Contact (see [AppDatabase] schema v3).
 class EntryRepository {
-  EntryRepository(this._appDb);
+  EntryRepository(this._appDb, {BackupDirtyFlag? dirty}) : _dirty = dirty;
 
   static const String table = 'entries';
 
@@ -22,11 +23,13 @@ class EntryRepository {
       'contact_id IN (SELECT id FROM contacts WHERE archived = 0)';
 
   final AppDatabase _appDb;
+  final BackupDirtyFlag? _dirty;
 
   /// Inserts [entry] and returns it with its assigned [Entry.id].
   Future<Entry> add(Entry entry) async {
     final db = await _appDb.open();
     final id = await db.insert(table, _toRow(entry));
+    _dirty?.mark();
     return entry.copyWith(id: id);
   }
 
@@ -53,12 +56,14 @@ class EntryRepository {
       where: 'id = ?',
       whereArgs: [entry.id],
     );
+    _dirty?.mark();
   }
 
   /// Deletes the Entry with primary key [id].
   Future<void> delete(int id) async {
     final db = await _appDb.open();
     await db.delete(table, where: 'id = ?', whereArgs: [id]);
+    _dirty?.mark();
   }
 
   /// Per-Contact net [Balance] within one [currency], keyed by contact id.

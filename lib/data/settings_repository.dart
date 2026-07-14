@@ -5,6 +5,7 @@ import '../domain/currency.dart';
 import '../domain/language_choice.dart';
 import '../domain/theme_choice.dart';
 import 'app_database.dart';
+import 'backup_dirty_flag.dart';
 
 /// Reads and writes app preferences in the key/value `settings` table.
 ///
@@ -13,7 +14,7 @@ import 'app_database.dart';
 /// rather than throwing. Because the table lives in the app database, the
 /// choices travel with the Backup (ADR 0001).
 class SettingsRepository {
-  SettingsRepository(this._appDb);
+  SettingsRepository(this._appDb, {BackupDirtyFlag? dirty}) : _dirty = dirty;
 
   static const String table = 'settings';
 
@@ -23,6 +24,7 @@ class SettingsRepository {
   static const String _languageKey = 'language';
 
   final AppDatabase _appDb;
+  final BackupDirtyFlag? _dirty;
 
   /// The selected accent, or [AccentTheme.defaultAccent] if none is stored.
   Future<AccentTheme> accent() async =>
@@ -73,5 +75,6 @@ class SettingsRepository {
       {'key': key, 'value': value},
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    _dirty?.mark();
   }
 }
