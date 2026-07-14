@@ -73,6 +73,16 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
 
+    // Accent swatches now sit below Profile + Preferences + Appearance in the
+    // Settings list, past the lazy ListView's build window — scroll them into
+    // view before tapping.
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('accent-plum')),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
     // Pick Plum.
     await tester.tap(find.byKey(const Key('accent-plum')));
     await tester.pumpAndSettle();
