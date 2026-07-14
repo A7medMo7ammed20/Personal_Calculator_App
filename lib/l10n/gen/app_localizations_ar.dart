@@ -236,4 +236,49 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get chartByContact => 'حسب جهة الاتصال';
+
+  @override
+  String get settingsProfile => 'ملفك';
+
+  @override
+  String get profileName => 'اسمك';
+
+  @override
+  String get profilePhone => 'هاتفك (اختياري)';
+
+  @override
+  String get profileNamePromptTitle => 'أضف اسمك';
+
+  @override
+  String get profileNamePromptMessage => 'يظهر اسمك كمُصدِر على الكشف.';
+
+  @override
+  String get exportStatement => 'تصدير كشف حساب';
+
+  @override
+  String get statementTitle => 'كشف حساب';
+
+  @override
+  String get statementFrom => 'من';
+
+  @override
+  String get statementTo => 'إلى';
+
+  @override
+  String get statementDateColumn => 'التاريخ';
+
+  @override
+  String get statementDescriptionColumn => 'الوصف';
+
+  @override
+  String get statementBalanceColumn => 'الرصيد';
+
+  @override
+  String get statementOpeningBalance => 'الرصيد الافتتاحي';
+
+  @override
+  String get statementClosingBalance => 'الرصيد الختامي';
+
+  @override
+  String get statementTotal => 'الإجمالي';
 }

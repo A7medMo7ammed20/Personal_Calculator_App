@@ -68,5 +68,20 @@
   "breakdownTitle": "التغيّرات · {interval}",
   "breakdownEmpty": "لا معاملات في هذه الفترة",
   "chartOverTime": "على مدى الوقت",
-  "chartByContact": "حسب جهة الاتصال"
+  "chartByContact": "حسب جهة الاتصال",
+  "settingsProfile": "ملفك",
+  "profileName": "اسمك",
+  "profilePhone": "هاتفك (اختياري)",
+  "profileNamePromptTitle": "أضف اسمك",
+  "profileNamePromptMessage": "يظهر اسمك كمُصدِر على الكشف.",
+  "exportStatement": "تصدير كشف حساب",
+  "statementTitle": "كشف حساب",
+  "statementFrom": "من",
+  "statementTo": "إلى",
+  "statementDateColumn": "التاريخ",
+  "statementDescriptionColumn": "الوصف",
+  "statementBalanceColumn": "الرصيد",
+  "statementOpeningBalance": "الرصيد الافتتاحي",
+  "statementClosingBalance": "الرصيد الختامي",
+  "statementTotal": "الإجمالي"
 }

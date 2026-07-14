@@ -1,6 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
-import 'package:intl/intl.dart';
+// Hide intl's TextDirection (LTR/RTL constants) so `TextDirection.rtl` below
+// resolves to Flutter's enum, not intl's bidi class.
+import 'package:intl/intl.dart' hide TextDirection;
+import 'package:printing/printing.dart' show Printing;
 
 import '../../data/entry_repository.dart';
 import '../../domain/balance.dart';
@@ -8,10 +13,16 @@ import '../../domain/contact.dart';
 import '../../domain/currency.dart';
 import '../../domain/entry.dart';
 import '../../domain/entry_sort.dart';
+import '../../domain/period.dart';
+import '../../domain/statement.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../entries/add_entry_screen.dart';
 import '../money_format.dart';
+import '../profile/ensure_profile_name.dart';
+import '../profile/profile_controller.dart';
+import '../statements/statement_pdf.dart';
 import '../theme/theme_context.dart';
+import '../widgets/period_selector.dart';
 import 'running_summary_sheet.dart';
 
 /// The heart of the ledger: one Contact's Entries plus a live per-Contact
@@ -23,6 +34,8 @@ class ContactScreen extends StatefulWidget {
     required this.contact,
     required this.repository,
     required this.currency,
+    this.profileController,
+    this.onSharePdf,
   });
 
   final Contact contact;
@@ -32,12 +45,25 @@ class ContactScreen extends StatefulWidget {
   /// balance, and new entries inherit it. See CONTEXT.md.
   final Currency currency;
 
+  /// Drives the first-export name prompt (#9/#10). When null the PDF export
+  /// action is hidden, so focused entry tests can pump without wiring it.
+  final ProfileController? profileController;
+
+  /// Delivers the finished PDF. Defaults to the OS share sheet
+  /// (`Printing.sharePdf`); injected in tests to capture the bytes without a
+  /// platform channel.
+  final Future<void> Function(Uint8List bytes, String filename)? onSharePdf;
+
   @override
   State<ContactScreen> createState() => _ContactScreenState();
 }
 
 class _ContactScreenState extends State<ContactScreen> {
   late Future<List<Entry>> _entries;
+
+  /// Mirror of the resolved entry list, kept so the app-bar export action can
+  /// hide itself when this currency lens has nothing to state.
+  List<Entry> _loaded = const [];
 
   final _searchController = TextEditingController();
   String _query = '';
@@ -57,10 +83,60 @@ class _ContactScreenState extends State<ContactScreen> {
   }
 
   void _load() {
-    _entries = widget.repository.listByContact(
+    final future = widget.repository.listByContact(
       widget.contact.id!,
       currency: widget.currency,
     );
+    _entries = future;
+    future.then((list) {
+      if (mounted) setState(() => _loaded = list);
+    });
+  }
+
+  /// Exports the PDF statement for this Contact in the current lens currency
+  /// (#10). Picks a date range (default all time), makes sure a creditor name
+  /// exists (#9's prompt-once seam), builds the pure statement model, renders
+  /// it, and hands the bytes to [ContactScreen.onSharePdf] / the share sheet.
+  Future<void> _exportStatement() async {
+    final l10n = AppLocalizations.of(context);
+    final localeName = Localizations.localeOf(context).toString();
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+
+    final choice = await showModalBottomSheet<_ExportChoice>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => const _ExportOptionsSheet(),
+    );
+    if (choice == null || !mounted) return;
+
+    final profile = await ensureProfileName(context, widget.profileController!);
+    if (profile == null || !mounted) return;
+
+    final range = resolvePeriod(
+      choice.period,
+      DateTime.now(),
+      customStart: choice.customStart,
+      customEnd: choice.customEnd,
+    );
+    final all = await widget.repository.listByContact(
+      widget.contact.id!,
+      currency: widget.currency,
+    );
+    final doc = buildStatement(
+      profile: profile,
+      contact: widget.contact,
+      entries: all,
+      currency: widget.currency,
+      range: range,
+      isRtl: isRtl,
+    );
+    final bytes = await renderStatementPdf(doc, l10n, localeName);
+    final share = widget.onSharePdf ??
+        (b, f) async {
+          await Printing.sharePdf(bytes: b, filename: f);
+        };
+    // ASCII-safe, stable file name; the document content stays localized/RTL.
+    await share(bytes, 'statement-${widget.currency.code}-${widget.contact.id}.pdf');
   }
 
   Future<void> _addEntry() async {
@@ -81,8 +157,22 @@ class _ContactScreenState extends State<ContactScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    // The export action appears only when a profile controller is wired and the
+    // lens currency actually has entries to state (ADR 0006).
+    final canExport = widget.profileController != null && _loaded.isNotEmpty;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.contact.name)),
+      appBar: AppBar(
+        title: Text(widget.contact.name),
+        actions: [
+          if (canExport)
+            IconButton(
+              key: const Key('export-statement'),
+              icon: const Icon(Icons.picture_as_pdf),
+              tooltip: l10n.exportStatement,
+              onPressed: _exportStatement,
+            ),
+        ],
+      ),
       body: FutureBuilder<List<Entry>>(
         future: _entries,
         builder: (context, snapshot) {
@@ -364,6 +454,90 @@ class _EntrySearchSortBar extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The user's export choice from the options sheet: a [PeriodOption] plus the
+/// custom range when [PeriodOption.custom] is picked. `resolvePeriod` turns it
+/// into the `DateRange?` the statement builder clips by.
+class _ExportChoice {
+  const _ExportChoice(this.period, {this.customStart, this.customEnd});
+
+  final PeriodOption period;
+  final DateTime? customStart;
+  final DateTime? customEnd;
+}
+
+/// The single, minimal export surface (ADR 0006): reuse the shared
+/// [PeriodSelector] (default All time) and a Share button. Tapping Share pops
+/// the chosen range back to the caller, which then runs the name prompt and the
+/// render. Custom opens the same date-range picker home/analysis use.
+class _ExportOptionsSheet extends StatefulWidget {
+  const _ExportOptionsSheet();
+
+  @override
+  State<_ExportOptionsSheet> createState() => _ExportOptionsSheetState();
+}
+
+class _ExportOptionsSheetState extends State<_ExportOptionsSheet> {
+  PeriodOption _period = PeriodOption.allTime;
+  DateTime? _customStart;
+  DateTime? _customEnd;
+
+  Future<void> _selectPeriod(PeriodOption option) async {
+    if (option == PeriodOption.custom) {
+      final picked = await showDateRangePicker(
+        context: context,
+        firstDate: DateTime(2000),
+        lastDate: DateTime(DateTime.now().year + 1, 12, 31),
+        initialDateRange: _customStart != null && _customEnd != null
+            ? DateTimeRange(start: _customStart!, end: _customEnd!)
+            : null,
+      );
+      if (picked == null) return; // cancelled — keep the current period
+      setState(() {
+        _period = PeriodOption.custom;
+        _customStart = picked.start;
+        _customEnd = picked.end;
+      });
+      return;
+    }
+    setState(() => _period = option);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.exportStatement,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            PeriodSelector(period: _period, onSelected: _selectPeriod),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              key: const Key('export-share'),
+              onPressed: () => Navigator.of(context).pop(
+                _ExportChoice(
+                  _period,
+                  customStart: _customStart,
+                  customEnd: _customEnd,
+                ),
+              ),
+              icon: const Icon(Icons.ios_share),
+              label: Text(l10n.exportStatement),
+            ),
+          ],
+        ),
       ),
     );
   }

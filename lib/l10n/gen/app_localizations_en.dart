@@ -234,4 +234,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chartByContact => 'By contact';
+
+  @override
+  String get settingsProfile => 'Profile';
+
+  @override
+  String get profileName => 'Your name';
+
+  @override
+  String get profilePhone => 'Your phone (optional)';
+
+  @override
+  String get profileNamePromptTitle => 'Add your name';
+
+  @override
+  String get profileNamePromptMessage =>
+      'Your name appears as the sender on the statement.';
+
+  @override
+  String get exportStatement => 'Export statement';
+
+  @override
+  String get statementTitle => 'Statement';
+
+  @override
+  String get statementFrom => 'From';
+
+  @override
+  String get statementTo => 'To';
+
+  @override
+  String get statementDateColumn => 'Date';
+
+  @override
+  String get statementDescriptionColumn => 'Description';
+
+  @override
+  String get statementBalanceColumn => 'Balance';
+
+  @override
+  String get statementOpeningBalance => 'Opening balance';
+
+  @override
+  String get statementClosingBalance => 'Closing balance';
+
+  @override
+  String get statementTotal => 'Total';
 }

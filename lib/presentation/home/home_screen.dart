@@ -16,6 +16,7 @@ import '../analysis/analysis_graph_screen.dart';
 import '../contacts/add_contact_screen.dart';
 import '../contacts/contact_screen.dart';
 import '../money_format.dart';
+import '../profile/profile_controller.dart';
 import '../settings/settings_screen.dart';
 import '../theme/theme_context.dart';
 import '../theme/theme_controller.dart';
@@ -33,6 +34,7 @@ class HomeScreen extends StatefulWidget {
     required this.repository,
     required this.entryRepository,
     this.themeController,
+    this.profileController,
   });
 
   final ContactRepository repository;
@@ -42,6 +44,11 @@ class HomeScreen extends StatefulWidget {
   /// focused widget tests can pump the list without wiring theming; the real
   /// app always supplies it (see `DebtLedgerApp`).
   final ThemeController? themeController;
+
+  /// Drives the Profile editor (in Settings) and the first-export name prompt
+  /// (on the Contact screen). Optional for the same testability reason; the
+  /// real app always supplies it.
+  final ProfileController? profileController;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -193,7 +200,10 @@ class _HomeScreenState extends State<HomeScreen> {
       case _HomeMenuAction.settings:
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => SettingsScreen(controller: widget.themeController!),
+            builder: (_) => SettingsScreen(
+              controller: widget.themeController!,
+              profileController: widget.profileController,
+            ),
           ),
         );
     }
@@ -241,6 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
           contact: contact,
           repository: widget.entryRepository,
           currency: _currency,
+          profileController: widget.profileController,
         ),
       ),
     );

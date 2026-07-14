@@ -5,6 +5,7 @@ import 'branding/daftar_splash.dart';
 import 'data/contact_repository.dart';
 import 'data/entry_repository.dart';
 import 'presentation/home/home_screen.dart';
+import 'presentation/profile/profile_controller.dart';
 import 'presentation/theme/app_theme.dart';
 import 'presentation/theme/theme_controller.dart';
 
@@ -18,11 +19,13 @@ class DebtLedgerApp extends StatelessWidget {
     required this.contactRepository,
     required this.entryRepository,
     required this.themeController,
+    required this.profileController,
   });
 
   final ContactRepository contactRepository;
   final EntryRepository entryRepository;
   final ThemeController themeController;
+  final ProfileController profileController;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +57,7 @@ class DebtLedgerApp extends StatelessWidget {
                   repository: contactRepository,
                   entryRepository: entryRepository,
                   themeController: themeController,
+                  profileController: profileController,
                 ),
               ),
             ),

@@ -511,6 +511,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'By contact'**
   String get chartByContact;
+
+  /// Settings section header for the owner's profile — name + phone (#9).
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get settingsProfile;
+
+  /// Label for the profile name field — the creditor printed on statements (#9).
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get profileName;
+
+  /// Label for the optional profile phone field (#9).
+  ///
+  /// In en, this message translates to:
+  /// **'Your phone (optional)'**
+  String get profilePhone;
+
+  /// Title of the dialog shown on the first PDF export when no profile name is set (#9).
+  ///
+  /// In en, this message translates to:
+  /// **'Add your name'**
+  String get profileNamePromptTitle;
+
+  /// Body of the first-export name prompt, explaining why the name is needed (#9).
+  ///
+  /// In en, this message translates to:
+  /// **'Your name appears as the sender on the statement.'**
+  String get profileNamePromptMessage;
+
+  /// Label/tooltip for the PDF statement export action on the Contact screen (#10).
+  ///
+  /// In en, this message translates to:
+  /// **'Export statement'**
+  String get exportStatement;
+
+  /// Heading printed at the top of the PDF statement (#10).
+  ///
+  /// In en, this message translates to:
+  /// **'Statement'**
+  String get statementTitle;
+
+  /// PDF header label preceding the creditor (profile) name (#10).
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get statementFrom;
+
+  /// PDF header label preceding the contact name/phone (#10).
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get statementTo;
+
+  /// PDF table column header for the entry date (#10).
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get statementDateColumn;
+
+  /// PDF table column header for the entry description (#10).
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get statementDescriptionColumn;
+
+  /// PDF table column header for the running balance (#10).
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
+  String get statementBalanceColumn;
+
+  /// PDF label for the balance carried in from before the date range (#10).
+  ///
+  /// In en, this message translates to:
+  /// **'Opening balance'**
+  String get statementOpeningBalance;
+
+  /// PDF label for the final all-time balance of the statement (#10).
+  ///
+  /// In en, this message translates to:
+  /// **'Closing balance'**
+  String get statementClosingBalance;
+
+  /// PDF label for the gross directional totals row (#10).
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get statementTotal;
 }
 
 class _AppLocalizationsDelegate

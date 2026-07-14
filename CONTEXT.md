@@ -34,7 +34,11 @@ The home header shows two per-currency totals for the selected currency: **Total
 - YER — Yemeni Riyal (ر.ي)
 
 ### Statement
-A per-Contact, per-currency PDF export of a Contact's entries (date | description | owed-to-me | owed-by-me columns) with the closing balance. Language follows the app; Arabic renders RTL. Optional date-range filter (default: all time). Distinct from the quick **WhatsApp share** — a tap-to-WhatsApp deep link with a pre-filled balance message for informal nudges.
+A per-Contact, per-currency PDF export of a Contact's entries: a dated table (date | description | owed-to-me | owed-by-me | running [[Balance]]) with an **opening balance**, the two gross directional **totals** (owed-to-me / owed-by-me), and the net **closing [[Balance]]**. Built by the same pure [[Running summary]] series as the on-screen preview and the [[Analysis graph]] (#8), so the three never disagree about what a [[Balance]] is. The creditor name on the header comes from the [[Profile]]; the Contact's name and phone identify the counterparty.
+
+Under an optional date-range filter (default: all time) the rows are **clipped in view** but the balance is **never recomputed over the window**: the statement **carries in the opening balance** from before the range, the running [[Balance]] and closing [[Balance]] stay the true all-time position, and only the two gross totals cover the in-range activity (opening + period activity = closing). This mirrors [ADR 0004](docs/adr/0004-analysis-graph-rendering-and-windowing.md) and upholds the [[Balance]] invariant — a windowed balance would falsely read 0 for an old, unpaid debt.
+
+Language follows the app; Arabic renders RTL. Distinct from the quick **WhatsApp share** — a tap-to-WhatsApp deep link with a pre-filled balance message for informal nudges.
 
 ### Running summary
 An on-screen, per-Contact, per-currency preview of the [[Statement]] up to a

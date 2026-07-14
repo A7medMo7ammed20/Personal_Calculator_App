@@ -2,8 +2,10 @@ import 'package:debt_ledger/app.dart';
 import 'package:debt_ledger/data/app_database.dart';
 import 'package:debt_ledger/data/contact_repository.dart';
 import 'package:debt_ledger/data/entry_repository.dart';
+import 'package:debt_ledger/data/profile_repository.dart';
 import 'package:debt_ledger/data/settings_repository.dart';
 import 'package:debt_ledger/domain/accent_theme.dart';
+import 'package:debt_ledger/presentation/profile/profile_controller.dart';
 import 'package:debt_ledger/presentation/theme/app_theme.dart';
 import 'package:debt_ledger/presentation/theme/theme_controller.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +44,7 @@ void main() {
       contactRepository: ContactRepository(appDb),
       entryRepository: EntryRepository(appDb),
       themeController: controller,
+      profileController: ProfileController(ProfileRepository(appDb)),
     ));
     // The animated DaftarSplash plays first (monogram draw-on + wordmark), then
     // routes to the home screen after a short hold timer. pumpAndSettle won't
