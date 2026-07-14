@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'daftar_mark.dart';
 
@@ -15,8 +17,8 @@ class DaftarSplash extends StatefulWidget {
   const DaftarSplash({
     super.key,
     this.onDone,
-    this.duration = const Duration(milliseconds: 2200),
-    this.hold = const Duration(milliseconds: 600),
+    this.duration = const Duration(milliseconds: 700),
+    this.hold = const Duration(milliseconds: 300),
   });
   final VoidCallback? onDone;
   final Duration duration;
@@ -33,6 +35,8 @@ class _DaftarSplashState extends State<DaftarSplash>
   late final Animation<double> _sweep; // hairline
   late final Animation<double> _word; // دفتر rise + fade
   late final Animation<double> _latin; // Daftar fade
+  bool _finished = false;
+  Timer? _finishTimer;
 
   @override
   void initState() {
@@ -44,14 +48,25 @@ class _DaftarSplashState extends State<DaftarSplash>
     _sweep = seg(0.48, 0.74);
     _word = seg(0.55, 0.92, Curves.easeOutBack);
     _latin = seg(0.72, 1.00);
-    _c.forward().whenComplete(() async {
-      await Future<void>.delayed(widget.hold);
-      if (mounted) widget.onDone?.call();
+    _c.forward();
+    // Auto-complete after the draw plays out plus a brief hold on the finished
+    // logo. Scheduled up front (not chained off the animation) so it fires at a
+    // predictable time and leaves no pending timer once it does.
+    _finishTimer = Timer(widget.duration + widget.hold, () {
+      if (mounted) _finish();
     });
+  }
+
+  void _finish() {
+    if (_finished) return;
+    _finished = true;
+    _finishTimer?.cancel();
+    widget.onDone?.call();
   }
 
   @override
   void dispose() {
+    _finishTimer?.cancel();
     _c.dispose();
     super.dispose();
   }
@@ -60,57 +75,61 @@ class _DaftarSplashState extends State<DaftarSplash>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: DaftarColors.teal,
-      body: Center(
-        child: AnimatedBuilder(
-          animation: _c,
-          builder: (context, _) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 150,
-                height: 150,
-                child: CustomPaint(
-                  painter:
-                      DaftarMarkPainter(color: Colors.white, progress: _draw.value),
+      body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _finish,
+        child: Center(
+          child: AnimatedBuilder(
+            animation: _c,
+            builder: (context, _) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 150,
+                  height: 150,
+                  child: CustomPaint(
+                    painter:
+                        DaftarMarkPainter(color: Colors.white, progress: _draw.value),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 26),
-              Container(
-                width: 96 * _sweep.value,
-                height: 2,
-                color: Colors.white.withValues(alpha: 0.55),
-              ),
-              const SizedBox(height: 24),
-              Opacity(
-                opacity: _word.value.clamp(0, 1),
-                child: Transform.translate(
-                  offset: Offset(0, 16 * (1 - _word.value.clamp(0, 1))),
-                  child: const Text('دفتر',
-                      textDirection: TextDirection.rtl,
+                const SizedBox(height: 26),
+                Container(
+                  width: 96 * _sweep.value,
+                  height: 2,
+                  color: Colors.white.withValues(alpha: 0.55),
+                ),
+                const SizedBox(height: 24),
+                Opacity(
+                  opacity: _word.value.clamp(0, 1),
+                  child: Transform.translate(
+                    offset: Offset(0, 16 * (1 - _word.value.clamp(0, 1))),
+                    child: const Text('دفتر',
+                        textDirection: TextDirection.rtl,
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Sans Arabic',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 44,
+                          color: Colors.white,
+                          height: 1,
+                        )),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Opacity(
+                  opacity: _latin.value.clamp(0, 1),
+                  child: Text('Daftar',
                       style: TextStyle(
-                        fontFamily: 'IBM Plex Sans Arabic',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 44,
-                        color: Colors.white,
-                        height: 1,
+                        fontFamily: 'IBM Plex Sans',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        letterSpacing: 0.5,
+                        color: Colors.white.withValues(alpha: 0.85),
                       )),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Opacity(
-                opacity: _latin.value.clamp(0, 1),
-                child: Text('Daftar',
-                    style: TextStyle(
-                      fontFamily: 'IBM Plex Sans',
-                      fontWeight: FontWeight.w500,
-                      fontSize: 15,
-                      letterSpacing: 0.5,
-                      color: Colors.white.withValues(alpha: 0.85),
-                    )),
-              ),
-            ],
-          ),
+              ],
+            ),
         ),
+      ),
       ),
     );
   }
