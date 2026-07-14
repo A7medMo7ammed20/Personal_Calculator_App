@@ -8,6 +8,7 @@ import 'package:printing/printing.dart';
 
 import '../../domain/balance.dart';
 import '../../domain/statement.dart';
+import '../../domain/statement_period.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../money_format.dart';
 
@@ -126,11 +127,11 @@ pw.Widget _header(
   AppLocalizations l10n,
   DateFormat dateFormat,
 ) {
-  final range = doc.dateRange;
-  final period = range == null
-      ? l10n.periodAllTime
-      : '${dateFormat.format(range.start)} – '
-          '${dateFormat.format(range.endExclusive.subtract(const Duration(days: 1)))}';
+  final period = statementPeriodLabel(
+    range: doc.dateRange,
+    dateFormat: dateFormat,
+    allTimeLabel: l10n.periodAllTime,
+  );
   final to = doc.contactPhone == null
       ? doc.contactName
       : '${doc.contactName} · ${doc.contactPhone}';
@@ -144,7 +145,8 @@ pw.Widget _header(
       pw.SizedBox(height: 8),
       pw.Text('${l10n.statementFrom}: ${doc.creditorName}'),
       pw.Text('${l10n.statementTo}: $to'),
-      pw.Text('${doc.currency.code} · $period'),
+      pw.Text(doc.currency.code),
+      pw.Text('${l10n.statementPeriod}: $period'),
     ],
   );
 }
