@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Android release signing — NEVER commit these (secret credentials).
+# Losing the keystore means you can never update the app on Google Play.
+/android/key.properties
+**/*.jks
+**/*.keystore

@@ -7,10 +7,34 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../domain/balance.dart';
+import '../../domain/period.dart';
 import '../../domain/statement.dart';
 import '../../domain/statement_period.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../money_format.dart';
+
+// The PDF toolchain can't reproduce two things Flutter's on-screen text engine
+// handles silently, so we scrub them before layout:
+//  * bidi isolates/controls (FSI, PDI, RLM, …) have no glyph in the embedded
+//    fonts and print as `.notdef` tofu boxes;
+//  * Arabic combining marks (harakat) do have glyphs, but pdf 3.13.0's RTL
+//    reordering splits them from their base letter into a broken cluster.
+// Neither carries meaning on a printed statement.
+final _pdfUnsupported = RegExp(
+  '[\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7\u06E8\u06EA-\u06ED\u200B-\u200F\u061C\u202A-\u202E\u2066-\u2069]',
+);
+String _pdfSafe(String text) => text.replaceAll(_pdfUnsupported, '');
+
+// pdf 3.13.0 only shapes and reorders a text run that resolves to RTL
+// (widgets/text.dart gates Arabic joining + bidi on `_textDirection == rtl`), so
+// an English (LTR) statement would leave an Arabic name or description unshaped
+// and reversed. We give each run the direction of its own script — not the
+// page's — so Arabic reads correctly whatever the export language is.
+final _rtlScript = RegExp(
+  '[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB1D-\uFDFF\uFE70-\uFEFF]',
+);
+pw.TextDirection _dirOf(String text) =>
+    _rtlScript.hasMatch(text) ? pw.TextDirection.rtl : pw.TextDirection.ltr;
 
 /// Renders a [StatementDocument] into PDF bytes (ADR 0006). The thin seam
 /// between the pure model and the `pdf`/`printing` toolchain: it reads the model
@@ -21,6 +45,8 @@ import '../money_format.dart';
 /// bundled IBM Plex Sans Arabic TTF and setting the page [pw.TextDirection] from
 /// [StatementDocument.isRtl]; the Latin family is kept as a fallback (and vice
 /// versa) so a mixed-script name or the Latin money digits always have glyphs.
+/// Individual runs override that page direction from their own content so an
+/// Arabic name stays readable inside an English (LTR) statement.
 Future<Uint8List> renderStatementPdf(
   StatementDocument doc,
   AppLocalizations l10n,
@@ -80,7 +106,10 @@ Future<Uint8List> renderStatementPdf(
           pw.Padding(
             padding: const pw.EdgeInsets.only(bottom: 8),
             child: pw.Text(
-              '${l10n.statementOpeningBalance}: ${balanceLabel(doc.openingBalance)}',
+              _pdfSafe(
+                '${l10n.statementOpeningBalance}: '
+                '${balanceLabel(doc.openingBalance)}',
+              ),
               style: pw.TextStyle(
                 color: balanceColor(doc.openingBalance),
                 fontWeight: pw.FontWeight.bold,
@@ -109,29 +138,30 @@ pw.Widget _cell(
   PdfColor? color,
   pw.TextAlign? align,
   bool bold = false,
-}) =>
-    pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      child: pw.Text(
-        text,
-        textAlign: align,
-        style: pw.TextStyle(
-          color: color,
-          fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-        ),
+}) {
+  final safe = _pdfSafe(text);
+  return pw.Padding(
+    padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+    child: pw.Text(
+      safe,
+      textAlign: align,
+      // Numeric columns pass a direction-relative align and ride the page axis;
+      // text columns (date, description) take direction from content so an
+      // Arabic value shapes even inside an LTR statement.
+      textDirection: align == null ? _dirOf(safe) : null,
+      style: pw.TextStyle(
+        color: color,
+        fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
       ),
-    );
+    ),
+  );
+}
 
 pw.Widget _header(
   StatementDocument doc,
   AppLocalizations l10n,
   DateFormat dateFormat,
 ) {
-  final period = statementPeriodLabel(
-    range: doc.dateRange,
-    dateFormat: dateFormat,
-    allTimeLabel: l10n.periodAllTime,
-  );
   final to = doc.contactPhone == null
       ? doc.contactName
       : '${doc.contactName} · ${doc.contactPhone}';
@@ -143,10 +173,47 @@ pw.Widget _header(
         style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
       ),
       pw.SizedBox(height: 8),
-      pw.Text('${l10n.statementFrom}: ${doc.creditorName}'),
-      pw.Text('${l10n.statementTo}: $to'),
+      _labeled(l10n.statementFrom, doc.creditorName),
+      _labeled(l10n.statementTo, to),
       pw.Text(doc.currency.code),
-      pw.Text('${l10n.statementPeriod}: $period'),
+      _periodLine(l10n, dateFormat, doc.dateRange),
+    ],
+  );
+}
+
+/// A `label: value` line whose value keeps its own script direction, so an
+/// Arabic name stays shaped and readable inside an LTR (English) statement while
+/// the label stays on the page's reading side.
+pw.Widget _labeled(String label, String value) {
+  final safe = _pdfSafe(value);
+  return pw.Row(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
+    children: [
+      pw.Text('$label: '),
+      pw.Flexible(child: pw.Text(safe, textDirection: _dirOf(safe))),
+    ],
+  );
+}
+
+/// The period line renders each date in its own run (start · dash · end) so the
+/// Latin-digit / Arabic-month mix orders correctly without the bidi isolates the
+/// combined label used — those had no glyph in the PDF font and printed as boxes.
+pw.Widget _periodLine(
+  AppLocalizations l10n,
+  DateFormat dateFormat,
+  DateRange? range,
+) {
+  final dates = statementPeriodDates(range: range, dateFormat: dateFormat);
+  if (dates == null) {
+    return pw.Text('${l10n.statementPeriod}: ${l10n.periodAllTime}');
+  }
+  return pw.Row(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
+    children: [
+      pw.Text('${l10n.statementPeriod}: '),
+      pw.Text(dates.start, textDirection: _dirOf(dates.start)),
+      pw.Text(' – '),
+      pw.Text(dates.end, textDirection: _dirOf(dates.end)),
     ],
   );
 }
@@ -224,7 +291,7 @@ pw.Widget _closing(
   return pw.Container(
     alignment: pw.Alignment.centerRight,
     child: pw.Text(
-      '${l10n.statementClosingBalance}: ${balanceLabel(doc.closingBalance)}',
+      _pdfSafe('${l10n.statementClosingBalance}: ${balanceLabel(doc.closingBalance)}'),
       style: pw.TextStyle(
         fontSize: 14,
         fontWeight: pw.FontWeight.bold,

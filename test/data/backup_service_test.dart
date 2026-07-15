@@ -179,4 +179,34 @@ void main() {
     expect(result, RestoreResult.newerVersion);
     expect((await (await b.open()).query('contacts')).single['name'], 'Keep me');
   });
+
+  test('restore that fails mid-swap leaves live data intact and cleans up',
+      () async {
+    // A real Daftar backup that passes validation.
+    final a = dbAt('a.db');
+    addTearDown(a.close);
+    await (await a.open()).insert('contacts', {'name': 'FromBackup'});
+    final file = await serviceFor(a).export();
+
+    final b = dbAt('b.db');
+    addTearDown(b.close);
+    await (await b.open()).insert('contacts', {'name': 'CurrentB'});
+
+    // Force the staging copy to fail the way a full disk or an I/O error would.
+    final service = BackupService(
+      appDatabase: b,
+      backupsDir: Directory(p.join(tmp.path, 'backups')),
+      copyFile: (_, _) async =>
+          throw const FileSystemException('simulated disk-full'),
+    );
+
+    final result = await service.restore(file);
+
+    // The failure is reported, not thrown, and nothing was swapped.
+    expect(result, RestoreResult.failure);
+    expect((await (await b.open()).query('contacts')).single['name'], 'CurrentB');
+    // No staged temp file is left behind.
+    final livePath = await b.resolvedPath();
+    expect(await File('$livePath.restore-tmp').exists(), isFalse);
+  });
 }

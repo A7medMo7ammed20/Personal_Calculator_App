@@ -95,4 +95,35 @@ void main() {
     final bytes = await renderStatementPdf(_doc(isRtl: true), l10n, 'ar');
     expect(_isPdf(bytes), isTrue);
   });
+
+  // An English (LTR) statement can still carry Arabic contact names, notes and a
+  // filtered period; the renderer must lay those out without crashing on the
+  // per-run direction / scrubbing added for readability (#10 follow-up).
+  testWidgets('renders an English statement carrying Arabic name and notes', (
+    tester,
+  ) async {
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    final doc = buildStatement(
+      profile: const Profile(name: 'Ahmed'),
+      contact: const Contact(id: 1, name: 'علي حاتم', phone: '+966500000000'),
+      entries: [
+        Entry(
+          id: 1,
+          contactId: 1,
+          amount: 20,
+          direction: Direction.owedToMe,
+          currency: Currency.sar,
+          createdAt: DateTime(2026, 7, 14),
+          description: 'عشاء',
+        ),
+      ],
+      currency: Currency.sar,
+      range: DateRange(DateTime(2026, 7, 1), DateTime(2026, 8, 1)),
+      isRtl: false,
+    );
+
+    final bytes = await renderStatementPdf(doc, l10n, 'en');
+
+    expect(_isPdf(bytes), isTrue);
+  });
 }

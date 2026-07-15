@@ -14,6 +14,9 @@ import 'backup_dirty_flag.dart';
 /// rather than throwing. Because the table lives in the app database, the
 /// choices travel with the Backup (ADR 0001).
 class SettingsRepository {
+  // A named param can't be private, so `this._dirty` won't compile; assign the
+  // field in the initializer list instead.
+  // ignore: prefer_initializing_formals
   SettingsRepository(this._appDb, {BackupDirtyFlag? dirty}) : _dirty = dirty;
 
   static const String table = 'settings';

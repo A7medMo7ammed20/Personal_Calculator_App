@@ -13,6 +13,9 @@ import 'backup_dirty_flag.dart';
 /// profile yet", which is exactly the signal the first-export name prompt keys
 /// off (see `ensureProfileName`).
 class ProfileRepository {
+  // A named param can't be private, so `this._dirty` won't compile; assign the
+  // field in the initializer list instead.
+  // ignore: prefer_initializing_formals
   ProfileRepository(this._appDb, {BackupDirtyFlag? dirty}) : _dirty = dirty;
 
   static const String table = 'settings';

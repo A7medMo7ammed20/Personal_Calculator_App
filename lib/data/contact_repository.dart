@@ -7,6 +7,9 @@ import 'entry_repository.dart';
 ///
 /// Row mapping lives here so the domain [Contact] stays persistence-agnostic.
 class ContactRepository {
+  // A named param can't be private, so `this._dirty` won't compile; assign the
+  // field in the initializer list instead.
+  // ignore: prefer_initializing_formals
   ContactRepository(this._appDb, {BackupDirtyFlag? dirty}) : _dirty = dirty;
 
   static const String table = 'contacts';

@@ -14,12 +14,22 @@ class BackupService {
     required this.backupsDir,
     this.clock = DateTime.now,
     this.retain = 5,
+    this.copyFile = _copyFile,
   });
 
   final AppDatabase appDatabase;
   final Directory backupsDir;
   final DateTime Function() clock;
   final int retain;
+
+  /// The file-copy primitive (source → destination path). Injectable — like
+  /// [clock] — so a test can force an I/O failure mid-restore and prove the
+  /// swap never leaves a half-written live database.
+  final Future<void> Function(File source, String dest) copyFile;
+
+  static Future<void> _copyFile(File source, String dest) async {
+    await source.copy(dest);
+  }
 
   static const String _autoPrefix = 'auto-';
   static const String _exportPrefix = 'daftar-backup-';
@@ -73,23 +83,55 @@ class BackupService {
 
   /// Full-replace restore (ADR 0010). Validates [file] in a temporary read-only
   /// handle FIRST — a foreign/corrupt file or a newer-schema backup is refused
-  /// before the live database is touched. On success it snapshots the current
-  /// data into the ring (so the restore is undoable), then swaps the file in and
-  /// leaves the database CLOSED for the caller's reload helper to reopen.
+  /// before the live database is touched. The incoming file is then *staged*
+  /// beside the live database while it is still open, so a disk-full or I/O
+  /// error during the copy (the realistic failure) returns
+  /// [RestoreResult.failure] with the live data untouched — never a half-written
+  /// database. Only once the backup is fully staged does it snapshot the current
+  /// data into the ring (the undo) and swap: the swap is a `delete` + `rename`,
+  /// which writes no bytes and so cannot fail on a full disk. On success the
+  /// database is left CLOSED for the caller's reload helper to reopen.
   Future<RestoreResult> restore(File file) async {
     final verdict = await _validate(file);
     if (verdict != RestoreResult.success) return verdict;
 
-    await autoBackup(); // snapshot current data before the swap
     final livePath = await appDatabase.resolvedPath();
-    await appDatabase.close();
-    // Remove stale WAL/SHM sidecars so the swapped-in file reopens cleanly.
-    for (final suffix in const ['-wal', '-shm']) {
-      final side = File('$livePath$suffix');
-      if (await side.exists()) await side.delete();
+    final staged = File('$livePath.restore-tmp');
+
+    // Phase 1 — stage the incoming file beside the live database while it is
+    // still open and untouched. The realistic failure (disk full, I/O error)
+    // lands here, before anything is swapped, so the live data stays whole.
+    try {
+      await copyFile(file, staged.path);
+    } catch (_) {
+      if (await staged.exists()) await staged.delete();
+      return RestoreResult.failure;
     }
-    await file.copy(livePath);
-    return RestoreResult.success;
+
+    // Phase 2 — commit. Snapshot the current data into the ring (the undo),
+    // then close the database, drop the old file plus its WAL/SHM sidecars, and
+    // move the staged copy into place. `rename` writes no bytes (so it cannot
+    // fail on a full disk) and, because the destination is removed first, is
+    // portable to Windows, where rename-over-existing is not atomic.
+    try {
+      await autoBackup();
+      await appDatabase.close();
+      for (final path in [livePath, '$livePath-wal', '$livePath-shm']) {
+        final old = File(path);
+        if (await old.exists()) await old.delete();
+      }
+      await staged.rename(livePath);
+      return RestoreResult.success;
+    } catch (_) {
+      // If the live file is still present the swap never started — drop the
+      // staged copy. If it is gone, the rename failed mid-swap: keep the staged
+      // copy (and the ring snapshot) for recovery. Either way report failure
+      // rather than throwing.
+      if (await File(livePath).exists() && await staged.exists()) {
+        await staged.delete();
+      }
+      return RestoreResult.failure;
+    }
   }
 
   /// Opens [file] read-only and checks it is a Daftar database no newer than us.
@@ -128,7 +170,7 @@ class BackupService {
     final livePath = await appDatabase.resolvedPath();
     await appDatabase.close();
     try {
-      await File(livePath).copy(destPath);
+      await copyFile(File(livePath), destPath);
     } finally {
       await appDatabase.open(); // reopen even if the copy threw
     }
