@@ -907,6 +907,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export failed'**
   String get exportFailed;
+
+  /// Tooltip/label for the calculator button on the amount field (Amount calculator, ADR 0011).
+  ///
+  /// In en, this message translates to:
+  /// **'Calculator'**
+  String get calculatorTooltip;
+
+  /// Commit button in the amount calculator — drops the result into the amount box (Amount calculator, ADR 0011).
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get calculatorDone;
+
+  /// Error shown in the amount calculator when the expression divides by zero (Amount calculator, ADR 0011).
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot divide by zero'**
+  String get calculatorDivideByZero;
 }
 
 class _AppLocalizationsDelegate

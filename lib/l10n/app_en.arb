@@ -361,5 +361,11 @@
   "exportSuccess": "Backup exported",
   "@exportSuccess": { "description": "Success message after an export/share (#26, story 20)." },
   "exportFailed": "Export failed",
-  "@exportFailed": { "description": "Failure message when export could not produce/share a file (#26)." }
+  "@exportFailed": { "description": "Failure message when export could not produce/share a file (#26)." },
+  "calculatorTooltip": "Calculator",
+  "@calculatorTooltip": { "description": "Tooltip/label for the calculator button on the amount field (Amount calculator, ADR 0011)." },
+  "calculatorDone": "Done",
+  "@calculatorDone": { "description": "Commit button in the amount calculator — drops the result into the amount box (Amount calculator, ADR 0011)." },
+  "calculatorDivideByZero": "Cannot divide by zero",
+  "@calculatorDivideByZero": { "description": "Error shown in the amount calculator when the expression divides by zero (Amount calculator, ADR 0011)." }
 }

@@ -447,4 +447,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get exportFailed => 'فشل التصدير';
+
+  @override
+  String get calculatorTooltip => 'الآلة الحاسبة';
+
+  @override
+  String get calculatorDone => 'تم';
+
+  @override
+  String get calculatorDivideByZero => 'لا يمكن القسمة على صفر';
 }

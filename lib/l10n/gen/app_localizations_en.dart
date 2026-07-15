@@ -448,4 +448,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exportFailed => 'Export failed';
+
+  @override
+  String get calculatorTooltip => 'Calculator';
+
+  @override
+  String get calculatorDone => 'Done';
+
+  @override
+  String get calculatorDivideByZero => 'Cannot divide by zero';
 }

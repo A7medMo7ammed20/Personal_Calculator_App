@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../domain/entry.dart';
 import '../../l10n/gen/app_localizations.dart';
+import 'amount_calculator_sheet.dart';
 
 /// The shared body of every entry form (#25): amount + direction + date/time +
 /// description. State (controllers, direction, [when]) is owned by the parent
@@ -35,6 +36,16 @@ class EntryFields extends StatelessWidget {
   /// optional). A non-empty but invalid amount is still rejected.
   final bool requireAmount;
 
+  /// Opens the Amount calculator (ADR 0011), seeded from whatever the amount
+  /// field currently holds, and writes the committed result back into it.
+  /// Result-only: nothing but the number is placed in the box.
+  Future<void> _openCalculator(BuildContext context) async {
+    FocusScope.of(context).unfocus();
+    final seed = double.tryParse(amountController.text.trim());
+    final result = await showAmountCalculator(context, seed: seed);
+    if (result != null) amountController.text = result;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -60,6 +71,12 @@ class EntryFields extends StatelessWidget {
           decoration: InputDecoration(
             labelText: l10n.entryAmount,
             border: const OutlineInputBorder(),
+            suffixIcon: IconButton(
+              key: const Key('entry-amount-calc'),
+              icon: const Icon(Icons.calculate_outlined),
+              tooltip: l10n.calculatorTooltip,
+              onPressed: () => _openCalculator(context),
+            ),
           ),
           validator: (value) {
             final text = value?.trim() ?? '';

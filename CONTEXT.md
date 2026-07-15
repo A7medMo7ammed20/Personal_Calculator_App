@@ -35,6 +35,22 @@ The home header shows two per-currency totals for the selected currency: **Total
 - SAR — Saudi Riyal (ر.س)
 - YER — Yemeni Riyal (ر.ي)
 
+### Amount calculator
+A keypad tool for computing an [[Entry]]'s amount with `+ − × ÷` before it is
+booked. Reached from a calculator icon on the **shared** amount field, so it
+appears in every entry flow (add, edit, quick-add معاملة, add-contact opening
+balance). It evaluates a full expression **with operator precedence** (`× ÷`
+before `+ −`) in a bottom sheet — with a live running result — and drops the
+**2-decimal-rounded** value into the amount box. **Result-only:** the expression
+itself is never stored, so the [[Entry]] keeps just the number, exactly as if
+typed, and the calculator touches no schema, [[Backup]] format, or [[Statement]]
+(see [ADR 0011](docs/adr/0011-amount-calculator-result-only.md)). A non-positive
+result cannot be committed — the amount box requires a positive magnitude, and
+[[Direction]] stays a separate, explicit choice (the calculator never infers
+sign). Latin digits throughout, consistent with money display.
+
+- Arabic: الآلة الحاسبة
+
 ### Statement
 A per-Contact, per-currency PDF export of a Contact's entries: a dated table (date | description | owed-to-me | owed-by-me | running [[Balance]]) with an **opening balance**, the two gross directional **totals** (owed-to-me / owed-by-me), and the net **closing [[Balance]]**. Built by the same pure [[Running summary]] series as the on-screen preview and the [[Analysis graph]] (#8), so the three never disagree about what a [[Balance]] is. The creditor name on the header comes from the [[Profile]]; the Contact's name and phone identify the counterparty.
 

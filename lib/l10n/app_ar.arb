@@ -134,5 +134,8 @@
   "restoreNewerVersion": "أُنشئت هذه النسخة بإصدار أحدث من دفتر",
   "restoreFailed": "فشلت الاستعادة",
   "exportSuccess": "تم تصدير النسخة الاحتياطية",
-  "exportFailed": "فشل التصدير"
+  "exportFailed": "فشل التصدير",
+  "calculatorTooltip": "الآلة الحاسبة",
+  "calculatorDone": "تم",
+  "calculatorDivideByZero": "لا يمكن القسمة على صفر"
 }
