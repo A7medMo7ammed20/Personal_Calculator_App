@@ -49,3 +49,4 @@ app.*.map.json
 /android/key.properties
 **/*.jks
 **/*.keystore
+bash.exe.stackdump
