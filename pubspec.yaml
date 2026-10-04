@@ -136,13 +136,20 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-# Adaptive launcher icon (Android). Teal #14746F is baked here and does NOT
-# follow the user's chosen accent (ADR 0002). Regenerate with:
+# Launcher icons. Teal #14746F is baked here and does NOT follow the user's
+# chosen accent (ADR 0002). Regenerate with:
 #   dart run flutter_launcher_icons
+# Android uses an adaptive icon. iOS needs an opaque, square icon (the App
+# Store rejects alpha and iOS applies the corner mask itself), so the white
+# glyph is flattened onto the teal field instead of using the pre-rounded
+# logo_icon.png.
 flutter_launcher_icons:
   android: true
-  ios: false
+  ios: true
   image_path: "assets/branding/logo_icon.png"
+  image_path_ios: "assets/branding/daftar_glyph_white.png"
+  remove_alpha_ios: true
+  background_color_ios: "#14746F"
   min_sdk_android: 21
   adaptive_icon_background: "#14746F"
   adaptive_icon_foreground: "assets/branding/logo_foreground.png"
